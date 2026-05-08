@@ -10,7 +10,9 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
+import { PricePlanType } from '../../../common/enums/price-plan-type.enum';
 
 export class UpdatePricePlanDto extends PartialType(CreatePricePlanDto) {
   @IsString()
@@ -23,20 +25,15 @@ export class UpdatePricePlanDto extends PartialType(CreatePricePlanDto) {
   @IsOptional()
   basePrice?: number;
 
+  @ValidateIf((o) => o.type === PricePlanType.HOLIDAY)
+  @IsNotEmpty()
   @IsDateString()
   @IsOptional()
   dateFrom?: string;
 
+  @ValidateIf((o) => o.type === PricePlanType.HOLIDAY)
+  @IsNotEmpty()
   @IsDateString()
   @IsOptional()
   dateTo?: string;
-
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  priority?: number;
-
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
 }

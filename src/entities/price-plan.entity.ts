@@ -1,3 +1,4 @@
+// price-plan.entity.ts
 import {
   Column,
   CreateDateColumn,
@@ -8,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { RoomType } from './room-type.entity';
+import { PricePlanType } from '../common/enums/price-plan-type.enum';
 
 @Entity('price_plan')
 export class PricePlan {
@@ -17,12 +19,11 @@ export class PricePlan {
   @Column({ name: 'roomTypeId' })
   roomTypeId: number;
 
-  @ManyToOne(() => RoomType, (rt) => rt.pricePlans, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'roomTypeId' })
-  roomType: RoomType;
-
   @Column({ length: 100 })
   pricePlanName: string;
+
+  @Column({ type: 'enum', enum: PricePlanType })
+  type: PricePlanType;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   basePrice: number;
@@ -30,14 +31,15 @@ export class PricePlan {
   @Column({ type: 'date', nullable: true })
   dateFrom: string | null;
 
-  @Column({ name: 'date_to', type: 'date', nullable: true })
+  @Column({ type: 'date', nullable: true })
   dateTo: string | null;
-
-  @Column({ default: 0 })
-  priority: number;
 
   @Column({ default: true })
   isActive: boolean;
+
+  @ManyToOne(() => RoomType, (rt) => rt.pricePlans, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'roomTypeId' })
+  roomType: RoomType;
 
   @CreateDateColumn()
   created_At: Date;

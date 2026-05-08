@@ -12,7 +12,6 @@ import {
 
 export class CreateRoomImageDto {
   @IsInt()
-  @IsPositive()
   roomTypeId: number;
 
   @IsUrl()

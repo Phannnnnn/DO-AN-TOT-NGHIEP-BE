@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoomAmenity } from '../../entities/room-amenity.entity';
 import { CreateRoomAmenityDto } from './dto/create-room-amenity.dto';
-import { UpdateRoomTypeAmenityDto } from '../room_type_amenity/dto/update-room-type-amenity.dto';
 import { UpdateRoomAmenityDto } from './dto/update-room-amenity.dto';
 
 @Injectable()
@@ -34,8 +33,14 @@ export class RoomAmenityService {
     return this.roomAmenityRepository.find({});
   }
 
-  amenityById(roomAmenityId: number) {
-    return this.roomAmenityRepository.findOneBy({ roomAmenityId });
+  async amenityById(roomAmenityId: number) {
+    const amenity = await this.roomAmenityRepository.findOneBy({
+      roomAmenityId,
+    });
+    if (!amenity) {
+      throw new NotFoundException('Tiện ích không tồn tại trên hệ thống.');
+    }
+    return amenity;
   }
 
   async update(

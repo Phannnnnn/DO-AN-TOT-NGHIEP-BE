@@ -8,5 +8,6 @@ import { RoomAmenityController } from './room-amenity.controller';
   controllers: [RoomAmenityController],
   providers: [RoomAmenityService],
   imports: [TypeOrmModule.forFeature([RoomAmenity])],
+  exports: [RoomAmenityService],
 })
 export class RoomAmenityModule {}

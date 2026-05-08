@@ -38,12 +38,6 @@ export class BookingDetail {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   priceAtBooking: number;
 
-  @CreateDateColumn()
-  created_At: Date;
-
-  @UpdateDateColumn()
-  update_At: Date;
-
   @ManyToOne(() => Booking, (booking) => booking.bookingDetails)
   @JoinColumn({ name: 'bookingId' })
   booking: Booking;
@@ -54,4 +48,10 @@ export class BookingDetail {
 
   @OneToMany(() => BookingServiceEntity, (bs) => bs.bookingDetail)
   bookingServices: BookingServiceEntity[];
+
+  @CreateDateColumn()
+  created_At: Date;
+
+  @UpdateDateColumn()
+  update_At: Date;
 }

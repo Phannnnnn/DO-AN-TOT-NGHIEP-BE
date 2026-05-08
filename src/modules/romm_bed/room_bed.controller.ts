@@ -21,9 +21,9 @@ export class BedController {
     return this.roomBedService.create(createRoomBedDto);
   }
 
-  @Get(':roomTypeId')
-  roomBeds(@Param('roomTypeId') roomTypeId: number) {
-    return this.roomBedService.roomBeds(roomTypeId);
+  @Get()
+  roomBeds() {
+    return this.roomBedService.roomBeds();
   }
 
   @Get(':id')

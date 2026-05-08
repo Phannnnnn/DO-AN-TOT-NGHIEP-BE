@@ -10,7 +10,6 @@ import {
 import { CreateRoomAmenityDto } from './dto/create-room-amenity.dto';
 import { RoomAmenityService } from './room-amenity.service';
 import { UpdateRoomAmenityDto } from './dto/update-room-amenity.dto';
-import { UpdateRoomTypeAmenityDto } from '../room_type_amenity/dto/update-room-type-amenity.dto';
 
 @Controller('amenity')
 export class RoomAmenityController {

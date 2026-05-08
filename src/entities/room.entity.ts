@@ -28,17 +28,16 @@ export class Room {
   })
   status: RoomStatus;
 
+  @Column()
+  roomTypeId: number;
+
+  @ManyToOne(() => RoomType, (roomType) => roomType.rooms)
+  @JoinColumn({ name: 'roomTypeId' })
+  roomType: RoomType;
+  
   @CreateDateColumn()
   created_At: Date;
 
   @UpdateDateColumn()
   update_At: Date;
-
-  @Column()
-  roomTypeId: number;
-
-  // Quan hệ N-1: Nhiều phòng thuộc về một loại phòng
-  @ManyToOne(() => RoomType, (roomType) => roomType.rooms)
-  @JoinColumn({ name: 'roomTypeId' })
-  roomType: RoomType;
 }

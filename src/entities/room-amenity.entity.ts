@@ -20,12 +20,12 @@ export class RoomAmenity {
   @Column({ length: 100 })
   roomAmenityName: string;
 
+  @OneToMany(() => RoomTypeAmenity, (rta) => rta.roomAmenity)
+  roomTypeAmenities: RoomTypeAmenity[];
+
   @CreateDateColumn()
   created_At: Date;
 
   @UpdateDateColumn()
   update_At: Date;
-
-  @OneToMany(() => RoomTypeAmenity, (rta) => rta.roomAmenity)
-  roomTypeAmenities: RoomTypeAmenity[];
 }

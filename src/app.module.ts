@@ -22,9 +22,13 @@ import { RoomAmenityModule } from './modules/room_amenity/room-amenity.module';
 import { PricePlanModule } from './modules/price_plan/price_plan.module';
 import { RoomTypeAmenityModule } from './modules/room_type_amenity/room_type_amenity.module';
 import { RoomBedModule } from './modules/romm_bed/room_bed.module';
+import { RoomTypeBedModule } from './modules/room_type_bed/room_type_bed.module';
+import { RoomTypeBed } from './entities/room-type-bed.entity';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: process.env.DB_TYPE as any,
@@ -53,6 +57,8 @@ import { RoomBedModule } from './modules/romm_bed/room_bed.module';
     RoomImageModule,
     PricePlanModule,
     RoomTypeAmenityModule,
+    RoomTypeBedModule,
+    RoomTypeBed,
   ],
   controllers: [],
   providers: [],

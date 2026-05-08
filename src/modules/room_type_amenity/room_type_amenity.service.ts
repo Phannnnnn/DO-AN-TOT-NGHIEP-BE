@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,33 +10,35 @@ import { RoomTypeAmenity } from '../../entities/room-type-amenity.entity';
 import { Repository } from 'typeorm';
 import { CreateRoomTypeAmenityDto } from './dto/create-room-type-amenity.dto';
 import { UpdateRoomTypeAmenityDto } from './dto/update-room-type-amenity.dto';
+import { RoomTypeService } from '../room_type/room_type.service';
+import { RoomAmenityService } from '../room_amenity/room-amenity.service';
 
 @Injectable()
 export class RoomTypeAmenityService {
   constructor(
     @InjectRepository(RoomTypeAmenity)
     private readonly roomTypeAmenityRepository: Repository<RoomTypeAmenity>,
+    @Inject(forwardRef(() => RoomTypeService))
+    private readonly roomTypeService: RoomTypeService,
+    private readonly roomAmenityService: RoomAmenityService,
   ) {}
 
   async create(createRoomTypeAmenityDto: CreateRoomTypeAmenityDto) {
     const { amenityIds, roomTypeId } = createRoomTypeAmenityDto;
 
-    const roomTypeExists = await this.roomTypeAmenityRepository.existsBy({
-      roomTypeId,
-    });
+    await this.roomTypeService.roomTypeById(roomTypeId);
 
-    if (!roomTypeExists) {
-      throw new NotFoundException('Loại phòng không tồn tại trên hệ thống.');
-    }
-
-    const roomTypeAmenity = amenityIds.map((roomAmenityId) =>
-      this.roomTypeAmenityRepository.create({
-        roomTypeId: roomTypeId,
-        roomAmenityId: roomAmenityId,
+    const roomTypeAmenities = await Promise.all(
+      amenityIds.map(async (roomAmenityId) => {
+        await this.roomAmenityService.amenityById(roomAmenityId);
+        return this.roomTypeAmenityRepository.create({
+          roomTypeId: roomTypeId,
+          roomAmenityId: roomAmenityId,
+        });
       }),
     );
 
-    return this.roomTypeAmenityRepository.save(roomTypeAmenity);
+    return this.roomTypeAmenityRepository.save(roomTypeAmenities);
   }
 
   async roomTypeAmenities() {
@@ -71,20 +75,17 @@ export class RoomTypeAmenityService {
     updateRoomTypeAmenityDto: UpdateRoomTypeAmenityDto,
   ) {
     const { amenityIds } = updateRoomTypeAmenityDto;
-    const roomTypeExists = await this.roomTypeAmenityRepository.existsBy({
-      roomTypeId,
-    });
-
-    if (!roomTypeExists) {
-      throw new NotFoundException('Loại phòng không tồn tại trên hệ thống.');
-    }
+    await this.roomTypeService.roomTypeById(roomTypeId);
 
     await this.roomTypeAmenityRepository.delete({ roomTypeId });
 
-    const roomTypeAmenity = amenityIds.map((roomAmenityId) =>
-      this.roomTypeAmenityRepository.create({
-        roomTypeId: roomTypeId,
-        roomAmenityId: roomAmenityId,
+    const roomTypeAmenity = await Promise.all(
+      amenityIds.map(async (roomAmenityId) => {
+        await this.roomAmenityService.amenityById(roomAmenityId);
+        return this.roomTypeAmenityRepository.create({
+          roomTypeId: roomTypeId,
+          roomAmenityId: roomAmenityId,
+        });
       }),
     );
 
@@ -96,13 +97,9 @@ export class RoomTypeAmenityService {
       ...(roomTypeId && { roomTypeId }),
       ...(roomAmenityId && { roomAmenityId }),
     };
-
-    console.log(roomTypeId, '-', roomAmenityId);
-
     const records = await this.roomTypeAmenityRepository.find({ where });
-
     if (!records.length) {
-      throw new NotFoundException('');
+      throw new NotFoundException('Tiện ích không tồn tại trên hệ thống.');
     }
 
     await this.roomTypeAmenityRepository.delete(where);

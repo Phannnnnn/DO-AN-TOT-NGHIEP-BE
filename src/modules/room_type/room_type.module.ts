@@ -1,27 +1,33 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { RoomTypeService } from './room_type.service';
 import { RoomTypeController } from './room_type.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RoomType } from '../../entities/room-type.entity';
 import { RoomAmenity } from '../../entities/room-amenity.entity';
 import { RoomTypeAmenity } from '../../entities/room-type-amenity.entity';
-import { RoomBed } from '../../entities/room-bed.entity';
 import { RoomImage } from '../../entities/room-image.entity';
 import { PricePlan } from '../../entities/price-plan.entity';
+import { RoomTypeBed } from '../../entities/room-type-bed.entity';
+import { RoomTypeAmenityModule } from '../room_type_amenity/room_type_amenity.module';
+import { RoomTypeBedModule } from '../room_type_bed/room_type_bed.module';
+import { PricePlanModule } from '../price_plan/price_plan.module';
 
 @Module({
   controllers: [RoomTypeController],
   providers: [RoomTypeService],
-  exports: [RoomTypeService],
   imports: [
+    forwardRef(() => RoomTypeAmenityModule),
+    forwardRef(() => RoomTypeBedModule),
+    forwardRef(() => PricePlanModule),
     TypeOrmModule.forFeature([
       RoomType,
       RoomAmenity,
       RoomTypeAmenity,
-      RoomBed,
+      RoomTypeBed,
       RoomImage,
       PricePlan,
     ]),
   ],
+  exports: [RoomTypeService],
 })
 export class RoomTypeModule {}

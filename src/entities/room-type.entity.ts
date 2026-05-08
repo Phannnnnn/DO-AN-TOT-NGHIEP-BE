@@ -7,10 +7,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Room } from './room.entity';
-import { RoomBed } from './room-bed.entity';
 import { RoomImage } from './room-image.entity';
 import { RoomTypeAmenity } from './room-type-amenity.entity';
 import { PricePlan } from './price-plan.entity';
+import { RoomTypeBed } from './room-type-bed.entity';
 
 @Entity('room_type')
 export class RoomType {
@@ -26,17 +26,8 @@ export class RoomType {
   @Column({ default: 1 })
   maxOccupancy: number;
 
-  @CreateDateColumn()
-  created_At: Date;
-
-  @UpdateDateColumn()
-  update_At: Date;
-
   @OneToMany(() => Room, (room) => room.roomType)
   rooms: Room[];
-
-  @OneToMany(() => RoomBed, (bed) => bed.roomType)
-  roomBeds: RoomBed[];
 
   @OneToMany(() => RoomImage, (img) => img.roomType)
   roomImages: RoomImage[];
@@ -44,6 +35,15 @@ export class RoomType {
   @OneToMany(() => RoomTypeAmenity, (rta) => rta.roomType)
   roomTypeAmenities: RoomTypeAmenity[];
 
+  @OneToMany(() => RoomTypeBed, (rtb) => rtb.roomType)
+  roomTypeBed: RoomTypeBed[];
+
   @OneToMany(() => PricePlan, (plan) => plan.roomType)
   pricePlans: PricePlan[];
+
+  @CreateDateColumn()
+  created_At: Date;
+
+  @UpdateDateColumn()
+  update_At: Date;
 }

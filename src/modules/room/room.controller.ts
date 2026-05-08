@@ -25,11 +25,8 @@ export class RoomController {
 
   // GET /room hoặc GET /room?roomTypeId=1
   @Get()
-  async rooms(
-    @Query('roomTypeId', new ParseIntPipe({ optional: true }))
-    roomTypeId?: number,
-  ) {
-    return this.roomService.rooms(roomTypeId);
+  async rooms() {
+    return this.roomService.rooms();
   }
 
   @Get(':id')

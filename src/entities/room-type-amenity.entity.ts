@@ -17,17 +17,19 @@ export class RoomTypeAmenity {
   @PrimaryColumn()
   roomAmenityId: number;
 
-  @CreateDateColumn()
-  created_At: Date;
-
-  @UpdateDateColumn()
-  update_At: Date;
-
-  @ManyToOne(() => RoomType, (rt) => rt.roomTypeAmenities)
+  @ManyToOne(() => RoomType, (rt) => rt.roomTypeAmenities, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'roomTypeId' })
   roomType: RoomType;
 
   @ManyToOne(() => RoomAmenity, (a) => a.roomTypeAmenities)
   @JoinColumn({ name: 'roomAmenityId' })
   roomAmenity: RoomAmenity;
+
+  @CreateDateColumn()
+  created_At: Date;
+
+  @UpdateDateColumn()
+  update_At: Date;
 }

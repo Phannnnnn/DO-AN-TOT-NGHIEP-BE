@@ -5,15 +5,14 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
-  IsPositive,
   IsString,
   MaxLength,
-  Min,
+  ValidateIf,
 } from 'class-validator';
+import { PricePlanType } from '../../../common/enums/price-plan-type.enum';
 
 export class CreatePricePlanDto {
   @IsInt()
-  @IsPositive()
   roomTypeId: number;
 
   @IsString()
@@ -21,21 +20,21 @@ export class CreatePricePlanDto {
   @MaxLength(100)
   pricePlanName: string;
 
-  @IsPositive()
+  @IsEnum(PricePlanType)
+  type: PricePlanType;
+
+  @IsNotEmpty()
   basePrice: number;
 
+  @ValidateIf((o) => o.type === PricePlanType.HOLIDAY)
+  @IsNotEmpty()
   @IsDateString()
-  @IsOptional()
   dateFrom?: string;
 
+  @ValidateIf((o) => o.type === PricePlanType.HOLIDAY)
+  @IsNotEmpty()
   @IsDateString()
-  @IsOptional()
   dateTo?: string;
-
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  priority?: number;
 
   @IsBoolean()
   @IsOptional()

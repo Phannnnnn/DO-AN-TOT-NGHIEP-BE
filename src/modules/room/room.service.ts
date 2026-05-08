@@ -18,11 +18,10 @@ export class RoomService {
     private readonly roomTypeService: RoomTypeService,
   ) {}
 
-  handleReturnData(room: any) {
-    if (!room) {
-      return;
-    }
+  private formatRoom(room: Room) {
+    const activePlan = room.roomType.pricePlans.find((p) => p.isActive) ?? null;
 
+    // return room;
     return {
       roomId: room.roomId,
       roomNumber: room.roomNumber,
@@ -34,44 +33,65 @@ export class RoomService {
         description: room.roomType.description,
         maxOccupancy: room.roomType.maxOccupancy,
       },
-      roomBeds: room.roomType.roomBeds.map((roomBeds) => {
+      pricePlan: activePlan
+        ? {
+            pricePlanId: activePlan.pricePlanId,
+            pricePlanName: activePlan.pricePlanName,
+            type: activePlan.type,
+            basePrice: activePlan.basePrice,
+          }
+        : null,
+      roomBeds: room.roomType.roomTypeBed.map((bed) => {
         return {
-          roomBedId: roomBeds.roomBedId,
-          roomBedType: roomBeds.roomBedType,
-          quantity: roomBeds.quantity,
+          roomBedId: bed.roomBedId,
+          roomBedType: bed.roomBed.roomBedType,
+          quantity: bed.quantity,
         };
       }),
-      roomImages: room.roomType.roomImages.map((images) => {
-        return {
-          roomImageId: images.roomImageId,
-          url: images.url,
-          altText: images.altText,
-          sortOrder: images.sortOrder,
-          isCover: images.isCover,
-        };
-      }),
-      roomTypeAmenities: room.roomType.roomTypeAmenities.map((amenity) => {
-        return {
-          roomAmenityId: amenity.roomAmenityId,
-          category: amenity.roomAmenity.category,
-          roomAmenityName: amenity.roomAmenity.roomAmenityName,
-        };
-      }),
-      pricePlans: room.roomType.pricePlans
-        .filter((p) => p.isActive)
-        .sort((a, b) => b.priority - a.priority)[0],
+      roomImages: room.roomType.roomImages.map((img) => ({
+        roomImageId: img.roomImageId,
+        url: img.url,
+        altText: img.altText,
+        sortOrder: img.sortOrder,
+        isCover: img.isCover,
+      })),
+      roomTypeAmenities: room.roomType.roomTypeAmenities.map((amenity) => ({
+        roomAmenityId: amenity.roomAmenityId,
+        category: amenity.roomAmenity.category,
+        roomAmenityName: amenity.roomAmenity.roomAmenityName,
+      })),
     };
   }
 
-  async create(createRoomDto: CreateRoomDto) {
-    // Kiểm tra loại phòng tồn tại không
-    await this.roomTypeService.roomTypeById(createRoomDto.roomTypeId);
+  private async roomByIdEntity(roomId: number): Promise<Room> {
+    const room = await this.roomRepository.findOne({
+      where: { roomId },
+      relations: {
+        roomType: {
+          roomTypeBed: { roomBed: true },
+          roomImages: true,
+          pricePlans: true,
+          roomTypeAmenities: { roomAmenity: true },
+        },
+      },
+      order: {
+        roomType: { roomImages: { sortOrder: 'ASC' } },
+      },
+    });
 
-    // Kiểm tra số phòng đã tồn tại chưa (số phòng phải unique toàn khách sạn)
+    if (!room) {
+      throw new NotFoundException('Phòng không tồn tại trên hệ thống.');
+    }
+
+    return room;
+  }
+
+  async create(createRoomDto: CreateRoomDto) {
+    await this.roomTypeService.roomTypeByIdEntity(createRoomDto.roomTypeId);
+
     const roomExists = await this.roomRepository.findOne({
       where: { roomNumber: createRoomDto.roomNumber },
     });
-
     if (roomExists) {
       throw new ConflictException(
         `Phòng số ${createRoomDto.roomNumber} đã tồn tại trên hệ thống.`,
@@ -80,41 +100,14 @@ export class RoomService {
 
     const room = this.roomRepository.create(createRoomDto);
     await this.roomRepository.save(room);
-
-    const rooms = await this.roomRepository.findOne({
-      where: { roomId: room.roomId },
-      relations: {
-        roomType: {
-          roomBeds: true,
-          roomImages: true,
-          pricePlans: true,
-          roomTypeAmenities: { roomAmenity: true },
-        },
-      },
-      order: {
-        roomNumber: 'ASC',
-        roomType: {
-          roomImages: {
-            sortOrder: 'ASC',
-          },
-        },
-      },
-    });
-
-    return this.handleReturnData(rooms);
+    return this.formatRoom(await this.roomByIdEntity(room.roomId));
   }
 
-  async rooms(roomTypeId?: number) {
-    // Nếu có roomTypeId thì kiểm tra loại phòng tồn tại không
-    if (roomTypeId) {
-      await this.roomTypeService.roomTypeById(roomTypeId);
-    }
-
+  async rooms() {
     const rooms = await this.roomRepository.find({
-      where: roomTypeId ? { roomTypeId } : {},
       relations: {
         roomType: {
-          roomBeds: true,
+          roomTypeBed: { roomBed: true },
           roomImages: true,
           pricePlans: true,
           roomTypeAmenities: { roomAmenity: true },
@@ -122,55 +115,22 @@ export class RoomService {
       },
       order: {
         roomNumber: 'ASC',
-        roomType: {
-          roomImages: {
-            sortOrder: 'ASC',
-          },
-        },
+        roomType: { roomImages: { sortOrder: 'ASC' } },
       },
     });
-
-    return rooms.map((room) => {
-      return this.handleReturnData(room);
-    });
+    return rooms.map((room) => this.formatRoom(room));
   }
 
   async roomById(roomId: number) {
-    const room = await this.roomRepository.findOne({
-      where: { roomId },
-      relations: {
-        roomType: {
-          roomBeds: true,
-          roomImages: true,
-          pricePlans: true,
-          roomTypeAmenities: { roomAmenity: true },
-        },
-      },
-      order: {
-        roomNumber: 'ASC',
-        roomType: {
-          roomImages: {
-            sortOrder: 'ASC',
-          },
-        },
-      },
-    });
-
-    if (!room) {
-      throw new NotFoundException('Phòng không tồn tại trên hệ thống.');
-    }
-
-    return this.handleReturnData(room);
+    return this.formatRoom(await this.roomByIdEntity(roomId));
   }
 
   async update(roomId: number, updateRoomDto: UpdateRoomDto) {
-    const room = await this.roomRepository.findOneBy({ roomId: roomId });
-
+    const room = await this.roomRepository.findOneBy({ roomId });
     if (!room) {
-      throw new NotFoundException(`Phòng này không tồn tại trên hệ thống.`);
+      throw new NotFoundException('Phòng này không tồn tại trên hệ thống.');
     }
 
-    // Nếu đổi số phòng thì kiểm tra trùng không
     if (
       updateRoomDto.roomNumber &&
       updateRoomDto.roomNumber !== room.roomNumber
@@ -178,7 +138,6 @@ export class RoomService {
       const roomExists = await this.roomRepository.findOne({
         where: { roomNumber: updateRoomDto.roomNumber },
       });
-
       if (roomExists) {
         throw new ConflictException(
           `Phòng số ${updateRoomDto.roomNumber} đã tồn tại trên hệ thống.`,
@@ -190,23 +149,21 @@ export class RoomService {
       updateRoomDto.roomTypeId &&
       updateRoomDto.roomTypeId !== room.roomTypeId
     ) {
-      await this.roomTypeService.roomTypeById(updateRoomDto.roomTypeId);
+      await this.roomTypeService.roomTypeByIdEntity(updateRoomDto.roomTypeId);
     }
 
     Object.assign(room, updateRoomDto);
     await this.roomRepository.save(room);
-
     return this.roomById(roomId);
   }
 
   async remove(roomId: number) {
-    const room = await this.roomRepository.findOneBy({ roomId: roomId });
-
+    const room = await this.roomRepository.findOneBy({ roomId });
     if (!room) {
-      throw new NotFoundException(`Phòng này không tồn tại trên hệ thống.`);
+      throw new NotFoundException('Phòng này không tồn tại trên hệ thống.');
     }
-    const roomRemoved = this.roomById(roomId);
+    const data = await this.roomById(roomId);
     await this.roomRepository.remove(room);
-    return roomRemoved;
+    return data;
   }
 }

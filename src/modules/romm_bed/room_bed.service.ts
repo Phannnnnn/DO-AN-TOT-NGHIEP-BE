@@ -8,22 +8,17 @@ import { RoomBed } from '../../entities/room-bed.entity';
 import { Not, Repository } from 'typeorm';
 import { CreateRoomBedDto } from './dto/create-room-bed.dto';
 import { UpdateRoomBedDto } from './dto/update-room-bed.dto';
-import { RoomTypeService } from '../room_type/room_type.service';
 
 @Injectable()
 export class RoomBedService {
   constructor(
     @InjectRepository(RoomBed)
     private readonly roomBedRepository: Repository<RoomBed>,
-    private readonly roomTypeService: RoomTypeService,
   ) {}
 
   async create(createRoomBedDto: CreateRoomBedDto): Promise<RoomBed> {
-    await this.roomTypeService.roomTypeById(createRoomBedDto.roomTypeId);
-
     const roomBedExists = await this.roomBedRepository.findOne({
       where: {
-        roomTypeId: createRoomBedDto.roomTypeId,
         roomBedType: createRoomBedDto.roomBedType,
       },
     });
@@ -36,10 +31,8 @@ export class RoomBedService {
     return this.roomBedRepository.save(roomBed);
   }
 
-  async roomBeds(roomTypeId: number): Promise<RoomBed[]> {
-    return this.roomBedRepository.find({
-      where: { roomTypeId },
-    });
+  async roomBeds() {
+    return this.roomBedRepository.find({});
   }
 
   async roomBedById(roomBedId: number) {
@@ -47,7 +40,7 @@ export class RoomBedService {
       where: { roomBedId },
     });
     if (!roomBed) {
-      throw new NotFoundException('Giường không tồn tại trên hệ thống.');
+      throw new NotFoundException('Loại giường không tồn tại trên hệ thống.');
     }
     return roomBed;
   }

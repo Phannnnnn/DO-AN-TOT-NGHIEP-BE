@@ -17,7 +17,7 @@ export class RoomImage {
   @Column()
   roomTypeId: number;
 
-  @ManyToOne(() => RoomType, (rt) => rt.roomImages)
+  @ManyToOne(() => RoomType, (rt) => rt.roomImages, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'roomTypeId' })
   roomType: RoomType;
 
