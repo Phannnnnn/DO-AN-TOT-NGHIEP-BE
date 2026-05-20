@@ -2,13 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { BedType } from '../common/enums/bed-type.enum';
 import { RoomTypeBed } from './room-type-bed.entity';
 
 @Entity('room_bed')
@@ -16,8 +13,11 @@ export class RoomBed {
   @PrimaryGeneratedColumn()
   roomBedId: number;
 
-  @Column({ type: 'enum', enum: BedType })
-  roomBedType: BedType;
+  @Column()
+  roomBedType: string;
+
+  @Column({ default: 1 })
+  capacity: number;
 
   @OneToMany(() => RoomTypeBed, (rtb) => rtb.roomBed)
   roomTypeBeds: RoomTypeBed[];

@@ -18,7 +18,9 @@ export class BookingServiceEntity {
   @Column()
   bookingDetailId: number;
 
-  @ManyToOne(() => BookingDetail, (detail) => detail.bookingServices)
+  @ManyToOne(() => BookingDetail, (detail) => detail.bookingServices, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'bookingDetailId' })
   bookingDetail: BookingDetail;
 

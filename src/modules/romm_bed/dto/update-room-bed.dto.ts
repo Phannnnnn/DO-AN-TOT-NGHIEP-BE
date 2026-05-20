@@ -1,10 +1,18 @@
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
-import { BedType } from '../../../common/enums/bed-type.enum';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class UpdateRoomBedDto {
-  @IsEnum(BedType)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
   @IsOptional()
-  bedType?: BedType;
+  roomBedType?: string;
 
   @IsInt()
   @Min(1)

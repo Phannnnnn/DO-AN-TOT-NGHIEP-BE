@@ -17,7 +17,7 @@ export class RoomAmenity {
   @Column({ type: 'enum', enum: AmenityCategory })
   category: AmenityCategory;
 
-  @Column({ length: 100 })
+  @Column()
   roomAmenityName: string;
 
   @OneToMany(() => RoomTypeAmenity, (rta) => rta.roomAmenity)

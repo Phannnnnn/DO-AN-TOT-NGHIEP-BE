@@ -4,11 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { Room } from '../../entities/room.entity';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomTypeService } from '../room_type/room_type.service';
+import { UpdateStatusRoomDto } from './dto/update-status-room.dto';
 
 @Injectable()
 export class RoomService {
@@ -46,6 +47,7 @@ export class RoomService {
           roomBedId: bed.roomBedId,
           roomBedType: bed.roomBed.roomBedType,
           quantity: bed.quantity,
+          capacity: bed.roomBed.capacity,
         };
       }),
       roomImages: room.roomType.roomImages.map((img) => ({
@@ -155,6 +157,18 @@ export class RoomService {
     Object.assign(room, updateRoomDto);
     await this.roomRepository.save(room);
     return this.roomById(roomId);
+  }
+
+  async updateStatus(roomId: number, updateStatusRoom: UpdateStatusRoomDto) {
+    const room = await this.roomById(roomId);
+    if (updateStatusRoom.status) {
+      if (!room) {
+        throw new NotFoundException('Phòng không tồn tại trên hệ thống.');
+      }
+      room.status = updateStatusRoom.status;
+    }
+
+    return room;
   }
 
   async remove(roomId: number) {

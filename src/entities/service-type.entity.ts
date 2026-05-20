@@ -19,9 +19,6 @@ export class ServiceType {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ default: true })
-  isActive: boolean;
-
   @OneToMany(() => Service, (service) => service.serviceType)
   services: Service[];
 

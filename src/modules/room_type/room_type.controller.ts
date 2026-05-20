@@ -41,6 +41,6 @@ export class RoomTypeController {
 
   @Delete(':id')
   async removeById(@Param('id') roomTypeId: number) {
-    return this.roomTypeService.removeById(roomTypeId);
+    return this.roomTypeService.remove(roomTypeId);
   }
 }

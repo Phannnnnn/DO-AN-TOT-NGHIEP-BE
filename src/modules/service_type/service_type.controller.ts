@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ServiceTypeService } from './service_type.service';
 import { CreateServiceTypeDto } from './dto/create-servicetype.dto';
 import { UpdateServiceTypeDto } from './dto/update-servicetype.dto';
@@ -9,31 +17,17 @@ export class ServiceTypeController {
 
   @Post()
   async create(@Body() createServicetypeDto: CreateServiceTypeDto) {
-    const serviceType =
-      await this.serviceTypeService.create(createServicetypeDto);
-    if (serviceType) {
-      return { success: true, serviceType };
-    }
-    return { success: false, message: 'Đã xảy ra lỗi.' };
+    return this.serviceTypeService.create(createServicetypeDto);
   }
 
   @Get()
   async serviceTypes() {
-    const serviceTypes = await this.serviceTypeService.serviceTypes();
-    if (serviceTypes) {
-      return { success: true, serviceTypes };
-    }
-    return { success: false, message: 'Đã xảy ra lỗi.' };
+    return this.serviceTypeService.serviceTypes();
   }
 
   @Get(':id')
   async serviceTypeById(@Param('id') serviceTypeId: number) {
-    const serviceType =
-      await this.serviceTypeService.serviceTypeById(serviceTypeId);
-    if (serviceType) {
-      return { success: true, serviceType };
-    }
-    return { success: false, message: 'Đã xảy ra lỗi.' };
+    return this.serviceTypeService.serviceTypeById(serviceTypeId);
   }
 
   @Patch(':id')
@@ -42,13 +36,11 @@ export class ServiceTypeController {
     @Body()
     updateServiceDto: UpdateServiceTypeDto,
   ) {
-    const serviceType = await this.serviceTypeService.update(
-      serviceTypeId,
-      updateServiceDto,
-    );
-    if (serviceType) {
-      return { success: true, serviceType };
-    }
-    return { success: false, message: 'Đã xảy ra lỗi.' };
+    return this.serviceTypeService.update(serviceTypeId, updateServiceDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') serviceTypeId: number) {
+    return this.serviceTypeService.remove(serviceTypeId);
   }
 }

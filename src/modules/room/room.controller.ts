@@ -12,6 +12,7 @@ import {
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { UpdateStatusRoomDto } from './dto/update-status-room.dto';
 
 @Controller('rooms')
 export class RoomController {
@@ -40,6 +41,14 @@ export class RoomController {
     @Body() updateRoomDto: UpdateRoomDto,
   ) {
     return this.roomService.update(roomId, updateRoomDto);
+  }
+
+  @Patch(':id')
+  updateStatus(
+    @Param('id') roomId: number,
+    updateStatusRoom: UpdateStatusRoomDto,
+  ) {
+    return this.roomService.updateStatus(roomId, updateStatusRoom);
   }
 
   @Delete(':id')

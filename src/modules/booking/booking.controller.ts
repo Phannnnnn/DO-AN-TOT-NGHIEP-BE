@@ -1,51 +1,79 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
+import { AvailableRoomsQueryDto } from './dto/available-rooms-query.dto';
+import { CheckInDto } from './dto/check-in-dto';
 
 @Controller('booking')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
-  async create(@Body() createBookingDto: CreateBookingDto) {
-    const booking = await this.bookingService.create(createBookingDto);
-    if (booking) {
-      return { success: true, booking };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi' };
+  create(@Body() createBookingDto: CreateBookingDto) {
+    return this.bookingService.create(createBookingDto);
+  }
+
+  @Get('available-rooms')
+  getAvailableRooms(@Query() query: AvailableRoomsQueryDto) {
+    return this.bookingService.getAvailableRooms(query);
   }
 
   @Get()
-  async bookings() {
-    const bookings = await this.bookingService.bookings();
-    if (bookings) {
-      return { success: true, bookings };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi' };
+  bookings() {
+    return this.bookingService.bookings();
   }
 
   @Get(':id')
-  async bookingById(@Param('id') bookingId: number) {
-    const booking = await this.bookingService.bookingById(bookingId);
-    if (booking) {
-      return { success: true, booking };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi' };
+  bookingById(@Param('id', ParseIntPipe) bookingId: number) {
+    return this.bookingService.bookingById(bookingId);
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') bookingId: number,
+  update(
+    @Param('id', ParseIntPipe) bookingId: number,
     @Body() updateBookingDto: UpdateBookingDto,
   ) {
-    const booking = await this.bookingService.update(
+    return this.bookingService.update(bookingId, updateBookingDto);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id', ParseIntPipe) bookingId: number,
+    @Body() updateBookingStatusDto: UpdateBookingStatusDto,
+  ) {
+    return this.bookingService.updateStatus(
       bookingId,
-      updateBookingDto,
+      updateBookingStatusDto.status,
     );
-    if (booking) {
-      return { success: true, booking };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi' };
+  }
+
+  @Patch(':id/check-in')
+  checkIn(
+    @Param('id', ParseIntPipe) bookingId: number,
+    @Body() checkInDto: CheckInDto,
+  ) {
+    return this.bookingService.checkIn(bookingId, checkInDto);
+  }
+
+  @Patch(':id/check-out')
+  checkOut(@Param('id', ParseIntPipe) bookingId: number) {
+    return this.bookingService.checkOut(bookingId);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') bookingId: number) {
+    return this.bookingService.remove(bookingId);
   }
 }

@@ -7,6 +7,7 @@ import {
 import { RoomTypeService } from '../room_type/room_type.service';
 import { Repository } from 'typeorm';
 import { RoomTypeBed } from '../../entities/room-type-bed.entity';
+import { RoomType } from '../../entities/room-type.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateRoomTypeBedDto } from './dto/create-room-type-bed.dto';
 import { UpdateRoomTypeBedDto } from './dto/update-room-type-bed.dto';
@@ -20,7 +21,26 @@ export class RoomTypeBedService {
     private readonly roomBedService: RoomBedService,
     @InjectRepository(RoomTypeBed)
     private readonly roomTypeBedRepository: Repository<RoomTypeBed>,
+    @InjectRepository(RoomType)
+    private readonly roomTypeRepository: Repository<RoomType>,
   ) {}
+
+  // ─── Tính lại maxOccupancy ───────────────────────────────────────
+  private async recalculateOccupancy(roomTypeId: number): Promise<void> {
+    const beds = await this.roomTypeBedRepository.find({
+      where: { roomTypeId },
+      relations: { roomBed: true },
+    });
+
+    const maxOccupancy = beds.reduce(
+      (sum, b) => sum + b.roomBed.capacity * b.quantity,
+      0,
+    );
+
+    await this.roomTypeRepository.update(roomTypeId, {
+      maxOccupancy: maxOccupancy || 1,
+    });
+  }
 
   async create(createRoomTypeBedDto: CreateRoomTypeBedDto) {
     const { roomBeds, roomTypeId } = createRoomTypeBedDto;
@@ -30,14 +50,16 @@ export class RoomTypeBedService {
       roomBeds.map(async (roomBed) => {
         await this.roomBedService.roomBedById(roomBed.roomBedId);
         return this.roomTypeBedRepository.create({
-          roomTypeId: roomTypeId,
+          roomTypeId,
           roomBedId: roomBed.roomBedId,
           quantity: roomBed.quantity,
         });
       }),
     );
 
-    return this.roomTypeBedRepository.save(roomTypeBeds);
+    const saved = await this.roomTypeBedRepository.save(roomTypeBeds);
+    await this.recalculateOccupancy(roomTypeId);
+    return saved;
   }
 
   async roomTypeBeds() {
@@ -46,28 +68,29 @@ export class RoomTypeBedService {
 
   async roomTypeBedByRoomTypeId(roomTypeId: number) {
     return this.roomTypeBedRepository.find({
-      where: { roomTypeId: roomTypeId },
+      where: { roomTypeId },
     });
   }
 
   async update(roomTypeId: number, updateRoomTypeBed: UpdateRoomTypeBedDto) {
     await this.roomTypeService.roomTypeById(roomTypeId);
     const { roomBeds } = updateRoomTypeBed;
-    await this.roomTypeBedRepository.delete({ roomTypeId: roomTypeId });
+    await this.roomTypeBedRepository.delete({ roomTypeId });
 
     const roomTypeBeds = await Promise.all(
       roomBeds.map(async (roomBed) => {
         await this.roomBedService.roomBedById(roomBed.roomBedId);
-
         return this.roomTypeBedRepository.create({
-          roomTypeId: roomTypeId,
+          roomTypeId,
           roomBedId: roomBed.roomBedId,
           quantity: roomBed.quantity,
         });
       }),
     );
 
-    return this.roomTypeBedRepository.save(roomTypeBeds);
+    const saved = await this.roomTypeBedRepository.save(roomTypeBeds);
+    await this.recalculateOccupancy(roomTypeId);
+    return saved;
   }
 
   async remove(roomTypeId?: number, roomBedId?: number) {
@@ -75,13 +98,17 @@ export class RoomTypeBedService {
       ...(roomTypeId && { roomTypeId }),
       ...(roomBedId && { roomBedId }),
     };
-    console.log(where);
     const records = await this.roomTypeBedRepository.find({ where });
     if (!records.length) {
       throw new NotFoundException('Loại phòng không tồn tại trên hệ thống.');
     }
 
     await this.roomTypeBedRepository.delete(where);
+
+    if (roomTypeId) {
+      await this.recalculateOccupancy(roomTypeId);
+    }
+
     return records;
   }
 }

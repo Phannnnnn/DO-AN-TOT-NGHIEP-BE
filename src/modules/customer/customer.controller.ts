@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -9,29 +17,17 @@ export class CustomerController {
 
   @Post()
   async createCustomer(@Body() createCustomerDto: CreateCustomerDto) {
-    const customer = await this.customerService.create(createCustomerDto);
-    if (customer) {
-      return { success: true, customer };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi.' };
+    return this.customerService.create(createCustomerDto);
   }
 
   @Get()
   async customers() {
-    const customers = await this.customerService.customers();
-    if (customers) {
-      return { success: true, customers };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi.' };
+    return this.customerService.customers();
   }
 
   @Get(':id')
   async customerById(@Param('id') customerId: number) {
-    const customer = await this.customerService.customerById(customerId);
-    if (customer) {
-      return { success: true, customer };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi.' };
+    return this.customerService.customerById(customerId);
   }
 
   @Patch(':id')
@@ -39,14 +35,11 @@ export class CustomerController {
     @Param('id') customerId: number,
     @Body() updateCustomerDto: UpdateCustomerDto,
   ) {
-    const customer = await this.customerService.update(
-      customerId,
-      updateCustomerDto,
-    );
+    return this.customerService.update(customerId, updateCustomerDto);
+  }
 
-    if (customer) {
-      return { success: true, customer };
-    }
-    return { success: false, message: 'Đã sảy ra lỗi.' };
+  @Delete(':id')
+  remove(@Param('id') customerId: number) {
+    return this.customerService.remove(customerId);
   }
 }

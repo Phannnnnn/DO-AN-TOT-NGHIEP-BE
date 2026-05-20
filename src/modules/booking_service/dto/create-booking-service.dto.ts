@@ -8,7 +8,4 @@ export class CreateBookingServiceDto {
   @IsInt()
   @Min(1)
   quantity: number;
-
-  @IsOptional()
-  notes?: string;
 }

@@ -52,40 +52,45 @@ export class ServiceService {
   }
 
   async update(serviceId: number, updateServiceDto: UpdateServiceDto) {
-    const { serviceName, serviceTypeId, ...otherData } = updateServiceDto;
-    const serviceExist = await this.serviceRepository.existsBy({
-      serviceId,
-    });
-    if (!serviceExist) {
+    const { serviceName, serviceTypeId, price, unit, description } =
+      updateServiceDto;
+
+    const service = await this.serviceRepository.findOneBy({ serviceId });
+
+    if (!service) {
       throw new NotFoundException('Dịch vụ không tồn tại.');
     }
 
     if (serviceName) {
-      const serviceExist = await this.serviceRepository.exists({
+      const nameExist = await this.serviceRepository.exists({
         where: {
           serviceName: serviceName,
           serviceId: Not(serviceId),
         },
       });
-      if (serviceExist) {
+      if (nameExist) {
         throw new ConflictException('Dịch vụ trùng tên với dịch vụ khác.');
       }
     }
 
     if (serviceTypeId !== undefined) {
-      const serviceType = await this.serviceTypeRepository.existsBy({
+      const typeExist = await this.serviceTypeRepository.existsBy({
         serviceTypeId,
       });
-      if (!serviceType) {
+      if (!typeExist) {
         throw new NotFoundException('Loại dịch vụ không tồn tại.');
       }
     }
 
-    await this.serviceRepository.update(serviceId, {
-      ...otherData,
-      ...(serviceName && { serviceName }),
-      ...(serviceTypeId && { serviceTypeId }),
+    Object.assign(service, {
+      serviceName,
+      serviceTypeId,
+      price,
+      unit,
+      description: description ?? '',
     });
+
+    await this.serviceRepository.save(service);
 
     return this.serviceRepository.findOne({
       where: { serviceId },
@@ -93,7 +98,17 @@ export class ServiceService {
     });
   }
 
-  remove(serviceId: number) {
-    return;
+  async remove(serviceId: number) {
+    const service = await this.serviceRepository.findOne({
+      where: { serviceId: serviceId },
+      relations: { serviceType: true },
+    });
+    if (!service) {
+      throw new NotFoundException('Dịch vụ không tồn tại trên hệ thống.');
+    }
+
+    await this.serviceRepository.delete({ serviceId });
+
+    return service;
   }
 }

@@ -23,22 +23,12 @@ export class BookingDetail {
   @Column()
   roomId: number;
 
-  @Column({ type: 'datetime' })
-  checkInPlan: Date;
-
-  @Column({ type: 'datetime' })
-  checkOutPlan: Date;
-
-  @Column({ type: 'datetime', nullable: true })
-  actualCheckIn: Date;
-
-  @Column({ type: 'datetime', nullable: true })
-  actualCheckOut: Date;
-
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   priceAtBooking: number;
 
-  @ManyToOne(() => Booking, (booking) => booking.bookingDetails)
+  @ManyToOne(() => Booking, (booking) => booking.bookingDetails, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'bookingId' })
   booking: Booking;
 
@@ -46,7 +36,9 @@ export class BookingDetail {
   @JoinColumn({ name: 'roomId' })
   room: Room;
 
-  @OneToMany(() => BookingServiceEntity, (bs) => bs.bookingDetail)
+  @OneToMany(() => BookingServiceEntity, (bs) => bs.bookingDetail, {
+    cascade: true,
+  })
   bookingServices: BookingServiceEntity[];
 
   @CreateDateColumn()

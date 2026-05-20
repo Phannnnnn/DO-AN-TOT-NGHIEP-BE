@@ -2,7 +2,6 @@ import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsString,
-  IsNumber,
   IsOptional,
   IsBoolean,
   MaxLength,
@@ -12,10 +11,10 @@ import {
 
 export class CreateServiceDto {
   @IsString()
-  @IsNotEmpty({ message: 'Tên dịch vụ không được để trống' })
+  @IsNotEmpty()
   serviceName: string;
 
-  @Min(0, { message: 'Giá không được nhỏ hơn 0' })
+  @Min(0)
   price: number;
 
   @IsString()
@@ -26,10 +25,6 @@ export class CreateServiceDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
 
   @IsInt({ message: 'ID loại phòng phải là số nguyên.' })
   @Type(() => Number)

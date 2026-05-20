@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ServiceType } from '../../entities/service-type.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { CreateServiceTypeDto } from './dto/create-servicetype.dto';
 import { UpdateServiceTypeDto } from './dto/update-servicetype.dto';
 
@@ -29,26 +33,44 @@ export class ServiceTypeService {
   }
 
   async update(serviceTypeId: number, updateServiceDto: UpdateServiceTypeDto) {
-    const existServiceType = await this.serviceTypeRepository.findOneBy({
+    const { typeName, description } = updateServiceDto;
+
+    const nameExist = await this.serviceTypeRepository.findOne({
+      where: {
+        typeName: updateServiceDto.typeName,
+        serviceTypeId: Not(serviceTypeId),
+      },
+    });
+
+    if (nameExist) {
+      throw new ConflictException('Dịch vụ đã tồn tại trên hệ thống.');
+    }
+
+    const serviceType = await this.serviceTypeRepository.findOneBy({
       serviceTypeId,
     });
 
-    if (!existServiceType) {
+    if (!serviceType) {
       throw new NotFoundException('Loại dịch vụ không tồn tại trong hệ thống.');
     }
 
-    const resutl = await this.serviceTypeRepository.update(
-      serviceTypeId,
-      updateServiceDto,
-    );
+    Object.assign(serviceType, { typeName, description: description ?? '' });
 
-    if (resutl.affected) {
-      return this.serviceTypeRepository.findOneBy({ serviceTypeId });
-    }
-    return null;
+    await this.serviceTypeRepository.save(serviceType);
+
+    return this.serviceTypeRepository.findOne({ where: { serviceTypeId } });
   }
 
-  async remove() {
-    return;
+  async remove(serviceTypeId: number) {
+    const serviceType = await this.serviceTypeRepository.findOne({
+      where: { serviceTypeId: serviceTypeId },
+      relations: { services: true },
+    });
+    if (!serviceType) {
+      throw new NotFoundException('Loại dịch vụ không tồn tại trên hệ thống.');
+    }
+    await this.serviceTypeRepository.delete({ serviceTypeId });
+
+    return serviceType;
   }
 }

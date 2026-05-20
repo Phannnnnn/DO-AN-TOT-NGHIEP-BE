@@ -4,10 +4,12 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { ServiceType } from './service-type.entity';
+import { BookingServiceEntity } from './booking-service.entity';
 
 @Entity('services')
 export class Service {
@@ -26,9 +28,6 @@ export class Service {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ default: true })
-  isActive: boolean;
-
   @Column()
   serviceTypeId: number;
 
@@ -36,8 +35,8 @@ export class Service {
   @JoinColumn({ name: 'serviceTypeId' })
   serviceType: ServiceType;
 
-  //   @OneToMany(() => BookingService, (bs) => bs.service)
-  //   bookingServices: BookingService[];
+  @OneToMany(() => BookingServiceEntity, (bs) => bs.service)
+  bookingServices: BookingServiceEntity[];
 
   @CreateDateColumn()
   created_At: Date;

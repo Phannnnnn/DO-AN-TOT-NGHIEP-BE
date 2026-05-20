@@ -14,6 +14,7 @@ import { Type } from 'class-transformer';
 import { RoomTypeBedDataDto } from '../../room_type_bed/dto/room-type-bed-data.dto';
 import { CreateRoomImageDto } from '../../room_image/dto/create-room-image.dto';
 import { RoomTypeUpdatePricePlanDto } from './room-type-update-price-plan.dto';
+import { UpdateRoomImageDto } from '../../room_image/dto/update-room-image.dto';
 
 export class UpdateRoomTypeDto {
   @IsString()
@@ -43,9 +44,9 @@ export class UpdateRoomTypeDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateRoomImageDto)
+  @Type(() => UpdateRoomImageDto)
   @IsOptional()
-  images?: CreateRoomImageDto[];
+  images?: UpdateRoomImageDto[];
 
   @IsArray()
   @ValidateNested({ each: true })

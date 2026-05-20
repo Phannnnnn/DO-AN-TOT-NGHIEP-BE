@@ -25,7 +25,7 @@ export class RoomTypeBed {
   @JoinColumn({ name: 'roomTypeId' })
   roomType: RoomType;
 
-  @ManyToOne(() => RoomBed, (rb) => rb.roomTypeBeds)
+  @ManyToOne(() => RoomBed, (rb) => rb.roomTypeBeds, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'roomBedId' })
   roomBed: RoomBed;
 

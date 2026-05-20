@@ -52,8 +52,12 @@ export class CustomerService {
     return this.customerRepository.find();
   }
 
-  customerById(customerId: number) {
-    return this.customerRepository.findOneBy({ customerId });
+  async customerById(customerId: number) {
+    const customer = await this.customerRepository.findOneBy({ customerId });
+    if (!customer) {
+      throw new NotFoundException('Người dùng không tồn tại trên hệ thống.');
+    }
+    return customer;
   }
 
   async update(customerId: number, updateCustomerDto: UpdateCustomerDto) {
@@ -94,7 +98,14 @@ export class CustomerService {
     });
   }
 
-  remove(customerId: number) {
-    return;
+  async remove(customerId: number) {
+    const customer = await this.customerRepository.findOneBy({ customerId });
+    if (!customer) {
+      throw new NotFoundException('Người dùng không tồn tại trên hệ thống.');
+    }
+
+    await this.customerRepository.delete({ customerId });
+
+    return customer;
   }
 }

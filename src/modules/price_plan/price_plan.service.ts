@@ -55,7 +55,7 @@ export class PricePlanService {
       });
       if (nameExists) {
         throw new ConflictException(
-          'Tên kế hoạch này đã được sử dụng với loại phòng này.',
+          `Tên kế hoạch '${createPricePlanDto.pricePlanName}' đã được sử dụng với loại phòng này.`,
         );
       }
 
@@ -120,18 +120,13 @@ export class PricePlanService {
       );
     }
 
-    // 1. Chặn thay đổi loại kế hoạch (Type)
     if (updatePricePlanDto.type && updatePricePlanDto.type !== pricePlan.type) {
       throw new BadRequestException(
         'Không thể thay đổi loại kế hoạch sau khi tạo.',
       );
     }
 
-    // 2. Xử lý logic theo loại kế hoạch
     if (pricePlan.type === PricePlanType.HOLIDAY) {
-      // --- LOGIC CHO HOLIDAY ---
-
-      // Check trùng tên ngày lễ
       if (
         updatePricePlanDto.pricePlanName &&
         updatePricePlanDto.pricePlanName !== pricePlan.pricePlanName
@@ -146,7 +141,6 @@ export class PricePlanService {
           throw new ConflictException('Kế hoạch giá ngày lễ này đã tồn tại.');
       }
 
-      // Validate và Check chồng chéo ngày
       const finalDateFrom = updatePricePlanDto.dateFrom ?? pricePlan.dateFrom;
       const finalDateTo = updatePricePlanDto.dateTo ?? pricePlan.dateTo;
 
@@ -164,18 +158,14 @@ export class PricePlanService {
         pricePlanId,
       );
     } else {
-      // --- LOGIC CHO DEFAULT / OTHERS ---
-      // Ép ngày về null để đảm bảo database sạch, bất kể DTO có gửi gì lên
       updatePricePlanDto.dateFrom = undefined;
       updatePricePlanDto.dateTo = undefined;
     }
 
-    // 3. Cập nhật dữ liệu
     Object.assign(pricePlan, updatePricePlanDto);
 
     const updatedPlan = await this.pricePlanRepository.save(pricePlan);
 
-    // 4. Đồng bộ Scheduler
     await this.pricePlanScheduler.syncActivePlans();
 
     return updatedPlan;

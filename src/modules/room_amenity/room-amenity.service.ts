@@ -18,7 +18,7 @@ export class RoomAmenityService {
 
   async create(createAmenityDto: CreateRoomAmenityDto) {
     const emenityExists = await this.roomAmenityRepository.exists({
-      where: { roomAmenityName: createAmenityDto.name },
+      where: { roomAmenityName: createAmenityDto.roomAmenityName },
     });
 
     if (emenityExists) {
@@ -70,6 +70,8 @@ export class RoomAmenityService {
     if (!amenity) {
       throw new NotFoundException('Tiện ích không tồn tại trong hệ thống.');
     }
+
+    
 
     await this.roomAmenityRepository.delete(roomAmenityId);
     return amenity;

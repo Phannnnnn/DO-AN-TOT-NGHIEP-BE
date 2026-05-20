@@ -152,7 +152,15 @@ export class RoomTypeService {
     } = updateRoomTypeDto;
 
     // 1. Update fields cơ bản
-    Object.assign(roomType, { typeName, description, maxOccupancy });
+    Object.assign(roomType, {
+      typeName,
+      description: description ?? '',
+      maxOccupancy,
+    });
+    if (!description) {
+      roomType.description = '';
+    }
+
     await this.roomTypeRepository.save(roomType);
 
     // 2. Update tiện ích
@@ -167,6 +175,25 @@ export class RoomTypeService {
 
     // 4. Update pricePlans
     if (pricePlans !== undefined) {
+      //Tat ca plans dang co
+      const pricePlansExists = roomType.pricePlans;
+      //Lay ra planIds
+      const planIds = pricePlansExists.map((plan) => plan.pricePlanId);
+      //Lay ra planIds update
+      const updatePlanIds = pricePlans
+        .filter((pricePlan) => pricePlan.pricePlanId)
+        .map((price) => price.pricePlanId);
+
+      //Tim cac planId khong co trong planIds
+      const deletePlanIds = planIds.filter((id) => !updatePlanIds.includes(id));
+
+      //Xoa cac plan khong co trong updatePlanIds
+      if (deletePlanIds.length) {
+        await Promise.all(
+          deletePlanIds.map((id) => this.pricePlanService.remove(id)),
+        );
+      }
+
       await Promise.all(
         pricePlans.map(async (pricePlan) => {
           if (pricePlan.pricePlanId) {
@@ -195,14 +222,14 @@ export class RoomTypeService {
     return this.formatRoomType(await this.roomTypeByIdEntity(roomTypeId));
   }
 
-  async removeById(roomTypeId: number) {
+  async remove(roomTypeId: number) {
     const roomType = await this.roomTypeRepository.findOne({
       where: { roomTypeId },
       relations: { rooms: true },
     });
 
     if (!roomType) {
-      throw new NotFoundException('Loại phòng không tồn tại.');
+      throw new NotFoundException('Loại phòng không tồn tại trên hệ thống.');
     }
 
     if (roomType.rooms && roomType.rooms.length > 0) {
@@ -227,6 +254,7 @@ export class RoomTypeService {
           pricePlanName: price.pricePlanName,
           type: price.type,
           basePrice: price.basePrice,
+          isActive: price.isActive,
           dateFrom: price?.dateFrom,
           dateTo: price?.dateTo,
         };

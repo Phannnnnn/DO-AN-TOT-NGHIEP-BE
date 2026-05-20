@@ -9,7 +9,7 @@ import { RoomTypeModule } from '../room_type/room_type.module';
 @Module({
   controllers: [RoomController],
   providers: [RoomService],
-
   imports: [TypeOrmModule.forFeature([Room, RoomType]), RoomTypeModule],
+  exports: [RoomService],
 })
 export class RoomModule {}

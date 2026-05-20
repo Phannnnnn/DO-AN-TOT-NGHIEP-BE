@@ -23,7 +23,9 @@ export class RoomTypeAmenity {
   @JoinColumn({ name: 'roomTypeId' })
   roomType: RoomType;
 
-  @ManyToOne(() => RoomAmenity, (a) => a.roomTypeAmenities)
+  @ManyToOne(() => RoomAmenity, (a) => a.roomTypeAmenities, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'roomAmenityId' })
   roomAmenity: RoomAmenity;
 

@@ -56,6 +56,7 @@ export class RoomBedService {
     if (!roomBed) {
       throw new NotFoundException('Giường không tồn tại trên hệ thống.');
     }
-    return this.roomBedRepository.remove(roomBed);
+    await this.roomBedRepository.delete(roomBedId);
+    return roomBed;
   }
 }

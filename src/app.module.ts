@@ -25,6 +25,8 @@ import { RoomBedModule } from './modules/romm_bed/room_bed.module';
 import { RoomTypeBedModule } from './modules/room_type_bed/room_type_bed.module';
 import { RoomTypeBed } from './entities/room-type-bed.entity';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MailModule } from './modules/mail/mail.module';
+import { VnpayModule } from './modules/vnpay/vnpay.module';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     RoomTypeAmenityModule,
     RoomTypeBedModule,
     RoomTypeBed,
+    MailModule,
+    VnpayModule,
   ],
   controllers: [],
   providers: [],
