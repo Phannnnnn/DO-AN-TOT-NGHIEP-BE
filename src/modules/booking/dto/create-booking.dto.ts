@@ -11,6 +11,7 @@ import {
   IsNotEmpty,
   IsEmail,
   IsDateString,
+  Matches,
 } from 'class-validator';
 import { CreateBookingDetailDto } from '../../booking_detail/dto/create-booking-detail.dto';
 
@@ -44,6 +45,10 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   ipAddr?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  sessionId: string;
 
   @IsArray()
   @ArrayMinSize(1)

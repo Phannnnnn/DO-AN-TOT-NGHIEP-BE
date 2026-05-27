@@ -14,6 +14,12 @@ export class BookingScheduler {
     private readonly bookingRepository: Repository<Booking>,
   ) {}
 
+  async onApplicationBootstrap() {
+    this.logger.log('Cancelling expired bookings on startup...');
+    await this.cancelExpiredBookings();
+    this.logger.log('Done cancelling expired bookings.');
+  }
+
   // Chạy lúc 00:05 mỗi ngày
   @Cron('5 0 * * *')
   async cancelExpiredBookings() {

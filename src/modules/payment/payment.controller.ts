@@ -1,10 +1,10 @@
 import { Controller, Post, Get, Param, Query, Req } from '@nestjs/common';
 import type { Request } from 'express';
-import { VnpayService } from './vnpay.service';
+import { PaymentService } from './payment.service';
 
 @Controller('payment')
-export class VnpayController {
-  constructor(private readonly vnpayService: VnpayService) {}
+export class PaymentController {
+  constructor(private readonly vnpayService: PaymentService) {}
 
   @Post('create-payment/:bookingId')
   createPayment(@Param('bookingId') bookingId: string, @Req() req: Request) {
@@ -18,7 +18,7 @@ export class VnpayController {
   }
 
   @Post('pay-cash/:bookingId')
-  payCash(@Param('bookingId') bookingId: string) {
-    return this.vnpayService.payCash(+bookingId);
+  payCash(@Param('bookingId') bookingId: number) {
+    return this.vnpayService.payCash(bookingId);
   }
 }

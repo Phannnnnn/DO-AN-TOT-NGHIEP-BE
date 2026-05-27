@@ -26,7 +26,11 @@ import { RoomTypeBedModule } from './modules/room_type_bed/room_type_bed.module'
 import { RoomTypeBed } from './entities/room-type-bed.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailModule } from './modules/mail/mail.module';
-import { VnpayModule } from './modules/vnpay/vnpay.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ReportModule } from './modules/report/report.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
+import { RoomHoldModule } from './modules/room_hold/room_hold.module';
 
 @Module({
   imports: [
@@ -62,7 +66,11 @@ import { VnpayModule } from './modules/vnpay/vnpay.module';
     RoomTypeBedModule,
     RoomTypeBed,
     MailModule,
-    VnpayModule,
+    PaymentModule,
+    DashboardModule,
+    ReportModule,
+    CloudinaryModule,
+    RoomHoldModule,
   ],
   controllers: [],
   providers: [],

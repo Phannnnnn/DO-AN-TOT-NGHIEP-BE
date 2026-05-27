@@ -20,6 +20,7 @@ import { Service } from '../../entities/service.entity';
 import { CheckInDto } from './dto/check-in-dto';
 import { AvailableRoomsQueryDto } from './dto/available-rooms-query.dto';
 import { MailService } from '../mail/mail.service';
+import { RoomHoldService } from '../room_hold/room_hold.service';
 
 @Injectable()
 export class BookingService {
@@ -37,10 +38,26 @@ export class BookingService {
     @InjectRepository(Service)
     private readonly serviceRepository: Repository<Service>,
     private readonly mailService: MailService,
+    private readonly roomHoldService: RoomHoldService,
   ) {}
 
   // ─── Tạo booking ────────────────────────────────────────────────
   async create(createBookingDto: CreateBookingDto) {
+    const roomIds = createBookingDto.bookingDetails.map((d) => d.roomId);
+
+    // Verify session còn hợp lệ và đúng khoảng thời gian
+    const isValid = await this.roomHoldService.isValidSession(
+      createBookingDto.sessionId,
+      roomIds,
+      createBookingDto.checkInDate,
+      createBookingDto.checkOutDate,
+    );
+    if (!isValid) {
+      throw new ConflictException(
+        'Phiên giữ phòng đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại phòng.',
+      );
+    }
+
     if (!createBookingDto.customerId) {
       if (!createBookingDto.guestName) {
         throw new BadRequestException('Tên khách không được để trống');
@@ -137,10 +154,13 @@ export class BookingService {
     } as any);
 
     const saved = await this.bookingRepository.save(booking as any);
+    await this.roomHoldService.release(createBookingDto.sessionId);
+
     const result = await this.bookingById(
       Array.isArray(saved) ? saved[0].bookingId : saved.bookingId,
     );
     this.mailService.sendBookingConfirmation(result as any).catch(() => {});
+
     return result;
   }
 
@@ -203,6 +223,12 @@ export class BookingService {
       throw new NotFoundException(`Đơn đặt phòng không tồn tại trên hệ thống.`);
     }
 
+    if (booking.status === BookingStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Đơn đặt phòng đã hoàn thành không thể chỉnh sửa.',
+      );
+    }
+
     if (updateBookingDto.notes !== undefined) {
       booking.notes = updateBookingDto.notes;
     }
@@ -217,8 +243,12 @@ export class BookingService {
       where: { bookingId },
     });
     if (!booking) {
-      throw new NotFoundException(
-        `Không tìm thấy booking có ID "${bookingId}"`,
+      throw new NotFoundException(`Không tìm thấy đơn đặt phòng.`);
+    }
+
+    if (booking.status === BookingStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Đơn đặt phòng đã hoàn thành không thể chỉnh sửa.',
       );
     }
 
@@ -243,14 +273,10 @@ export class BookingService {
 
     if (status === BookingStatus.COMPLETED) {
       if (!booking.actualCheckIn) {
-        throw new BadRequestException(
-          'Booking chưa được check-in, không thể hoàn thành',
-        );
+        throw new BadRequestException('Chưa nhận phòng không thể hoàn thành');
       }
       if (!booking.actualCheckOut) {
-        throw new BadRequestException(
-          'Booking chưa được check-out, không thể hoàn thành',
-        );
+        throw new BadRequestException('Chưa trả phòng không thể hoàn thành');
       }
     }
 
@@ -265,24 +291,26 @@ export class BookingService {
       where: { bookingId },
     });
     if (!booking) {
-      throw new NotFoundException(
-        `Không tìm thấy booking có ID "${bookingId}"`,
-      );
+      throw new NotFoundException(`Không tìm thấy đơn đặt phòng.`);
     }
-    if (booking.status !== BookingStatus.CONFIRMED) {
+
+    if (booking.status === BookingStatus.COMPLETED) {
       throw new BadRequestException(
-        'Chỉ có thể check-in khi booking đã được xác nhận',
+        'Đơn đặt phòng đã hoàn thành không thể chỉnh sửa.',
       );
     }
+
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      throw new BadRequestException('Đơn chưa xác nhận không thể nhận phòng.');
+    }
+
     if (booking.actualCheckIn) {
-      throw new BadRequestException('Booking này đã được check-in trước đó');
+      throw new BadRequestException('Đã nhận phòng trước đó');
     }
 
     const today = new Date().toISOString().slice(0, 10);
     if (today !== booking.checkInDate) {
-      throw new BadRequestException(
-        `Chỉ có thể check-in đúng ngày ${booking.checkInDate}`,
-      );
+      throw new BadRequestException(`Ngày nhận phòng khống phù hợp`);
     }
 
     // Lưu danh sách khách lưu trú
@@ -316,17 +344,24 @@ export class BookingService {
       where: { bookingId },
     });
     if (!booking) {
-      throw new NotFoundException(
-        `Không tìm thấy booking có ID "${bookingId}"`,
+      throw new NotFoundException(`Không tìm thấy đơn đặt phòng`);
+    }
+
+    if (booking.status === BookingStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Đơn đặt phòng đã hoàn thành không thể chỉnh sửa.',
       );
     }
+
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      throw new BadRequestException('Đơn chưa xác nhận không thể nhận phòng.');
+    }
+
     if (!booking.actualCheckIn) {
-      throw new BadRequestException(
-        'Booking này chưa được check-in, không thể check-out',
-      );
+      throw new BadRequestException('Phải nhận phòng trước khi trả phòng.');
     }
     if (booking.actualCheckOut) {
-      throw new BadRequestException('Booking này đã được check-out trước đó');
+      throw new BadRequestException('Đã nhận phòng trước đó.');
     }
 
     // Cập nhật trạng thái phòng → AVAILABLE
@@ -370,6 +405,12 @@ export class BookingService {
 
     const bookedRoomIds = bookedDetails.map((d) => d.roomId);
 
+    const heldRoomIds = await this.roomHoldService.getHeldRoomIds(
+      query.checkInDate,
+      query.checkOutDate,
+    );
+    const excludedRoomIds = [...new Set([...bookedRoomIds, ...heldRoomIds])];
+
     // 2. Lấy tất cả phòng AVAILABLE (không filter maxOccupancy)
     const roomQuery = this.roomRepository
       .createQueryBuilder('r')
@@ -377,14 +418,15 @@ export class BookingService {
       .leftJoinAndSelect('rt.roomTypeBed', 'rtb')
       .leftJoinAndSelect('rtb.roomBed', 'rb')
       .leftJoinAndSelect('rt.pricePlans', 'pp', 'pp.isActive = true')
-      .where('r.status = :status', { status: RoomStatus.AVAILABLE });
+      .where('r.status != :maintenance', {
+        maintenance: RoomStatus.MAINTENANCE,
+      });
 
-    if (bookedRoomIds.length) {
+    if (excludedRoomIds.length) {
       roomQuery.andWhere('r.roomId NOT IN (:...bookedRoomIds)', {
-        bookedRoomIds,
+        bookedRoomIds: excludedRoomIds,
       });
     }
-
     const rooms = await roomQuery.orderBy('rt.maxOccupancy', 'DESC').getMany();
 
     const formatted = rooms.map((r) => ({
@@ -427,7 +469,6 @@ export class BookingService {
 
     const results: any[][] = [];
 
-    // BFS theo số phòng: 1 → 2 → 3 → 4
     for (
       let size = 1;
       size <= Math.min(maxRoomsPerCombination, sorted.length);
@@ -444,8 +485,7 @@ export class BookingService {
         return results.length >= maxCombinations;
       });
 
-      // Dừng ở level ít phòng nhất có tổ hợp hợp lệ
-      if (results.length > 0) break;
+      if (results.length > 0) break; // ✅ đúng — break ngay khi có kết quả ở size nhỏ nhất
     }
 
     // 4. Sort theo độ gần (tầng + số phòng), trả về tối đa maxCombinations

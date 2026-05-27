@@ -12,11 +12,12 @@ import { CustomerModule } from '../customer/customer.module';
 import { RoomModule } from '../room/room.module';
 import { BookingGuest } from '../../entities/booking-guest.entity';
 import { MailModule } from '../mail/mail.module';
-import { VnpayModule } from '../vnpay/vnpay.module';
+import { RoomHoldModule } from '../room_hold/room_hold.module';
+import { BookingScheduler } from './booking.scheduler';
 
 @Module({
   controllers: [BookingController],
-  providers: [BookingService],
+  providers: [BookingService, BookingScheduler],
   imports: [
     TypeOrmModule.forFeature([
       Booking,
@@ -30,7 +31,7 @@ import { VnpayModule } from '../vnpay/vnpay.module';
     CustomerModule,
     RoomModule,
     MailModule,
-    VnpayModule,
+    RoomHoldModule,
   ],
   exports: [BookingService],
 })

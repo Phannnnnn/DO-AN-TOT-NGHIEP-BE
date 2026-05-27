@@ -10,10 +10,10 @@ import { Repository } from 'typeorm';
 import { RoomType } from '../../entities/room-type.entity';
 import { UpdateRoomTypeDto } from './dto/update-roomtype.dto';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
-import { RoomTypeAmenity } from '../../entities/room-type-amenity.entity';
 import { RoomTypeAmenityService } from '../room_type_amenity/room_type_amenity.service';
 import { RoomTypeBedService } from '../room_type_bed/room_type_bed.service';
 import { PricePlanService } from '../price_plan/price_plan.service';
+import { RoomImageService } from '../room_image/room_image.service';
 
 @Injectable()
 export class RoomTypeService {
@@ -29,6 +29,9 @@ export class RoomTypeService {
 
     @Inject(forwardRef(() => PricePlanService))
     private readonly pricePlanService: PricePlanService,
+
+    @Inject(forwardRef(() => RoomImageService))
+    private readonly roomImageService: RoomImageService,
   ) {}
 
   async create(createRoomTypeDto: CreateRoomTypeDto) {
@@ -83,6 +86,7 @@ export class RoomTypeService {
     }
 
     if (images?.length) {
+      await this.roomImageService.saveImages(roomTypeId, images);
     }
 
     return this.formatRoomType(await this.roomTypeByIdEntity(roomTypeId));
@@ -218,7 +222,9 @@ export class RoomTypeService {
     }
 
     if (images !== undefined) {
+      await this.roomImageService.replaceImages(roomTypeId, images);
     }
+
     return this.formatRoomType(await this.roomTypeByIdEntity(roomTypeId));
   }
 

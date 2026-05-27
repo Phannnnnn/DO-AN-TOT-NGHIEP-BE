@@ -11,14 +11,16 @@ import { PaymentMethod } from '../../common/enums/payment-method.enum';
 import { PaymentStatus } from '../../common/enums/payment-status.enum';
 import { BookingStatus } from '../../common/enums/booking-status.enum';
 import { MailService } from '../mail/mail.service';
+import { BookingService } from '../booking/booking.service';
 
 @Injectable()
-export class VnpayService {
+export class PaymentService {
   private readonly vnpay: VNPay;
 
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    private readonly bookingService: BookingService,
     private readonly mailService: MailService,
   ) {
     this.vnpay = new VNPay({
@@ -85,17 +87,27 @@ export class VnpayService {
     const booking = await this.bookingRepository.findOne({
       where: { bookingId },
     });
-    if (!booking) throw new NotFoundException('Booking không tồn tại');
+    if (!booking) {
+      throw new NotFoundException('Đơn đặt phòng không tồn tại.');
+    }
+
     if (booking.paymentStatus === PaymentStatus.PAID) {
-      throw new BadRequestException('Booking này đã được thanh toán');
+      throw new BadRequestException('Đơn đặt phòng này đã được thanh toán');
     }
 
     const updated = await this.bookingRepository.findOne({
       where: { bookingId },
       relations: { customer: true, bookingDetails: { room: true } },
     });
+
+    updated!.paymentMethod = PaymentMethod.CASH;
+    updated!.paymentStatus = PaymentStatus.PAID;
+    updated!.status = BookingStatus.CONFIRMED;
+
+    await this.bookingRepository.save(updated!);
+
     this.mailService.sendPaymentConfirmation(updated!).catch(() => {});
 
-    return { message: 'Thanh toán thành công' };
+    return this.bookingService.bookingById(bookingId);
   }
 }

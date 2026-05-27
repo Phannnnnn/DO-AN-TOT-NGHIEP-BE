@@ -1,9 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateRoomTypeDto } from './create-room-type.dto';
 import {
   IsArray,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
@@ -12,7 +9,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RoomTypeBedDataDto } from '../../room_type_bed/dto/room-type-bed-data.dto';
-import { CreateRoomImageDto } from '../../room_image/dto/create-room-image.dto';
 import { RoomTypeUpdatePricePlanDto } from './room-type-update-price-plan.dto';
 import { UpdateRoomImageDto } from '../../room_image/dto/update-room-image.dto';
 

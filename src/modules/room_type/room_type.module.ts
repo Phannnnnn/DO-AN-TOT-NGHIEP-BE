@@ -11,6 +11,7 @@ import { RoomTypeBed } from '../../entities/room-type-bed.entity';
 import { RoomTypeAmenityModule } from '../room_type_amenity/room_type_amenity.module';
 import { RoomTypeBedModule } from '../room_type_bed/room_type_bed.module';
 import { PricePlanModule } from '../price_plan/price_plan.module';
+import { RoomImageModule } from '../room_image/room_image.module';
 
 @Module({
   controllers: [RoomTypeController],
@@ -19,6 +20,7 @@ import { PricePlanModule } from '../price_plan/price_plan.module';
     forwardRef(() => RoomTypeAmenityModule),
     forwardRef(() => RoomTypeBedModule),
     forwardRef(() => PricePlanModule),
+    forwardRef(() => RoomImageModule),
     TypeOrmModule.forFeature([
       RoomType,
       RoomAmenity,
