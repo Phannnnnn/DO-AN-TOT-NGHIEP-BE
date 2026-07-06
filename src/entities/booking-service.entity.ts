@@ -8,8 +8,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { BookingDetail } from './booking-detail.entity';
-import { Service } from './service.entity';
-
 @Entity('booking_services')
 export class BookingServiceEntity {
   @PrimaryGeneratedColumn()
@@ -24,18 +22,20 @@ export class BookingServiceEntity {
   @JoinColumn({ name: 'bookingDetailId' })
   bookingDetail: BookingDetail;
 
-  @Column()
-  serviceId: number;
+  @Column({ length: 100 })
+  serviceName: string;
 
-  @ManyToOne(() => Service, { eager: true })
-  @JoinColumn({ name: 'serviceId' })
-  service: Service;
+  @Column({ length: 50, nullable: true })
+  unit: string;
+
+  @Column({ nullable: true })
+  serviceId: number;
 
   @Column({ default: 1 })
   quantity: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  priceAtUsage: number; // Lưu giá dịch vụ tại thời điểm sử dụng
+  priceAtUsage: number;
 
   @CreateDateColumn()
   created_At: Date;

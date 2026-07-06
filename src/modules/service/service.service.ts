@@ -20,8 +20,8 @@ export class ServiceService {
   ) {}
 
   async create(createServiceDto: CreateServiceDto) {
-    const serviceExist = await this.serviceRepository.existsBy({
-      serviceName: createServiceDto.serviceName,
+    const serviceExist = await this.serviceRepository.exists({
+      where: { serviceName: createServiceDto.serviceName },
     });
 
     if (serviceExist) {
@@ -41,7 +41,9 @@ export class ServiceService {
   }
 
   services() {
-    return this.serviceRepository.find({ relations: { serviceType: true } });
+    return this.serviceRepository.find({
+      relations: { serviceType: true },
+    });
   }
 
   serviceById(serviceId: number) {
@@ -52,7 +54,7 @@ export class ServiceService {
   }
 
   async update(serviceId: number, updateServiceDto: UpdateServiceDto) {
-    const { serviceName, serviceTypeId, price, unit, description } =
+    const { serviceName, serviceTypeId, price, isActive, unit, description } =
       updateServiceDto;
 
     const service = await this.serviceRepository.findOneBy({ serviceId });
@@ -86,6 +88,7 @@ export class ServiceService {
       serviceName,
       serviceTypeId,
       price,
+      isActive,
       unit,
       description: description ?? '',
     });
@@ -107,7 +110,7 @@ export class ServiceService {
       throw new NotFoundException('Dịch vụ không tồn tại trên hệ thống.');
     }
 
-    await this.serviceRepository.delete({ serviceId });
+    await this.serviceRepository.softDelete(serviceId);
 
     return service;
   }

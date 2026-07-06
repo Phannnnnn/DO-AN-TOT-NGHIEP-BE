@@ -11,7 +11,9 @@ describe('RoomTypeAmenityController', () => {
       providers: [RoomTypeAmenityService],
     }).compile();
 
-    controller = module.get<RoomTypeAmenityController>(RoomTypeAmenityController);
+    controller = module.get<RoomTypeAmenityController>(
+      RoomTypeAmenityController,
+    );
   });
 
   it('should be defined', () => {

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PricePlan } from '../../entities/price-plan.entity';
-import { Not, Repository } from 'typeorm';
+import { LessThanOrEqual, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { CreatePricePlanDto } from './dto/create-price-plan.dto';
 import { UpdatePricePlanDto } from './dto/update-price-plan.dto';
 import { RoomTypeService } from '../room_type/room_type.service';
@@ -137,8 +137,9 @@ export class PricePlanService {
             pricePlanName: updatePricePlanDto.pricePlanName,
           },
         });
-        if (nameExists)
+        if (nameExists) {
           throw new ConflictException('Kế hoạch giá ngày lễ này đã tồn tại.');
+        }
       }
 
       const finalDateFrom = updatePricePlanDto.dateFrom ?? pricePlan.dateFrom;
@@ -194,14 +195,7 @@ export class PricePlanService {
   private validateHolidayDates(dateFrom: string, dateTo: string): void {
     const from = this.parseAndValidateDate(dateFrom, 'Ngày bắt đầu');
     const to = this.parseAndValidateDate(dateTo, 'Ngày kết thúc');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
-    if (from < today) {
-      throw new BadRequestException(
-        'Ngày bắt đầu không được là ngày trong quá khứ.',
-      );
-    }
     if (from >= to) {
       throw new BadRequestException('Ngày bắt đầu phải trước ngày kết thúc.');
     }
@@ -213,20 +207,16 @@ export class PricePlanService {
     dateTo: string,
     excludePricePlanId?: number,
   ): Promise<void> {
-    const qb = this.pricePlanRepository
-      .createQueryBuilder('pp')
-      .where('pp.roomTypeId = :roomTypeId', { roomTypeId })
-      .andWhere('pp.type = :type', { type: PricePlanType.HOLIDAY })
-      .andWhere('pp.dateFrom <= :dateTo', { dateTo })
-      .andWhere('pp.dateTo >= :dateFrom', { dateFrom });
+    const overlap = await this.pricePlanRepository.findOne({
+      where: {
+        roomTypeId: roomTypeId,
+        type: PricePlanType.HOLIDAY,
+        dateFrom: LessThanOrEqual(dateTo),
+        dateTo: MoreThanOrEqual(dateFrom),
+        ...(excludePricePlanId && { pricePlanId: Not(excludePricePlanId) }),
+      },
+    });
 
-    if (excludePricePlanId) {
-      qb.andWhere('pp.pricePlanId != :excludePricePlanId', {
-        excludePricePlanId,
-      });
-    }
-
-    const overlap = await qb.getOne();
     if (overlap) {
       throw new ConflictException(
         `Khoảng ngày bị trùng với kế hoạch giá "${overlap.pricePlanName}" (${overlap.dateFrom} → ${overlap.dateTo}).`,

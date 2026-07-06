@@ -3,7 +3,6 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
-  IsPositive,
   IsString,
   IsUrl,
   MaxLength,
@@ -11,9 +10,6 @@ import {
 } from 'class-validator';
 
 export class CreateRoomImageDto {
-  @IsInt()
-  roomTypeId: number;
-
   @IsUrl()
   @IsNotEmpty()
   @MaxLength(500)

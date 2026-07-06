@@ -4,6 +4,7 @@ export enum ReportGroupBy {
   DAY = 'day',
   MONTH = 'month',
   YEAR = 'year',
+  QUARTER = 'quarter',
 }
 
 export class ReportQueryDto {

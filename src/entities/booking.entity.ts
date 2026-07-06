@@ -47,6 +47,9 @@ export class Booking {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   totalAmount: number;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  serviceAmount: number;
+
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
   status: BookingStatus;
 
@@ -61,6 +64,15 @@ export class Booking {
 
   @Column({ length: 50, nullable: true })
   vnpayTransactionId: string;
+
+  @Column({ type: 'enum', enum: PaymentMethod, nullable: true })
+  servicePaymentMethod: PaymentMethod;
+
+  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.UNPAID })
+  servicePaymentStatus: PaymentStatus;
+
+  @Column({ length: 50, nullable: true })
+  serviceVnpayTransactionId: string;
 
   @OneToMany(() => BookingDetail, (detail) => detail.booking, { cascade: true })
   bookingDetails: BookingDetail[];

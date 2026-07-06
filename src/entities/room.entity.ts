@@ -34,7 +34,7 @@ export class Room {
   @ManyToOne(() => RoomType, (roomType) => roomType.rooms)
   @JoinColumn({ name: 'roomTypeId' })
   roomType: RoomType;
-  
+
   @CreateDateColumn()
   created_At: Date;
 

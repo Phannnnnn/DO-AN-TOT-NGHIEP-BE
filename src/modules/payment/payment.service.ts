@@ -110,4 +110,91 @@ export class PaymentService {
 
     return this.bookingService.bookingById(bookingId);
   }
+
+  // ─── Thanh toán dịch vụ bằng tiền mặt ───────────────────────────
+  async payServiceCash(bookingId: number) {
+    const booking = await this.bookingRepository.findOne({
+      where: { bookingId },
+    });
+    if (!booking) {
+      throw new NotFoundException('Đơn đặt phòng không tồn tại.');
+    }
+
+    if (booking.servicePaymentStatus === PaymentStatus.PAID) {
+      throw new BadRequestException('Dịch vụ đã được thanh toán.');
+    }
+
+    await this.bookingRepository.update(bookingId, {
+      servicePaymentMethod: PaymentMethod.CASH,
+      servicePaymentStatus: PaymentStatus.PAID,
+    });
+
+    return this.bookingService.bookingById(bookingId);
+  }
+
+  // ─── Tạo URL thanh toán dịch vụ qua VNPAY ───────────────────────
+  async createServicePaymentUrl(
+    bookingId: number,
+    ipAddr: string,
+  ): Promise<string> {
+    const booking = await this.bookingRepository.findOne({
+      where: { bookingId },
+    });
+    if (!booking) throw new NotFoundException('Booking không tồn tại');
+    if (booking.servicePaymentStatus === PaymentStatus.PAID) {
+      throw new BadRequestException('Dịch vụ đã được thanh toán.');
+    }
+
+    return this.vnpay.buildPaymentUrl({
+      vnp_Amount: Number(booking.serviceAmount),
+      vnp_IpAddr: ipAddr,
+      vnp_TxnRef: `svc_${bookingId}`,
+      vnp_OrderInfo: `Thanh toan dich vu booking #${bookingId}`,
+      vnp_OrderType: ProductCode.Other,
+      vnp_ReturnUrl: process.env.VNPAY_RETURN_URL!,
+      vnp_Locale: VnpLocale.VN,
+    });
+  }
+
+  // ─── IPN handler cho thanh toán dịch vụ ─────────────────────────
+  async handleServiceIpn(query: Record<string, string>) {
+    const result = this.vnpay.verifyReturnUrl(query as any);
+    if (!result.isSuccess)
+      return { RspCode: '97', Message: 'Invalid signature' };
+
+    const txnRef = result.vnp_TxnRef;
+    if (!txnRef.startsWith('svc_'))
+      return { RspCode: '01', Message: 'Invalid txn ref' };
+
+    const bookingId = Number(txnRef.replace('svc_', ''));
+    const booking = await this.bookingRepository.findOne({
+      where: { bookingId },
+    });
+
+    if (!booking) return { RspCode: '01', Message: 'Order not found' };
+    if (booking.servicePaymentStatus === PaymentStatus.PAID) {
+      return { RspCode: '02', Message: 'Already confirmed' };
+    }
+
+    await this.bookingRepository.update(bookingId, {
+      servicePaymentStatus: PaymentStatus.PAID,
+      servicePaymentMethod: PaymentMethod.VNPAY,
+      serviceVnpayTransactionId: result.vnp_TransactionNo?.toString(),
+    });
+
+    return { RspCode: '00', Message: 'Confirm success' };
+  }
+
+  async verifyPaymentReturn(query: Record<string, string>) {
+    const result = this.vnpay.verifyReturnUrl(query as any);
+    if (!result.isVerified) {
+      throw new BadRequestException('Chữ ký không hợp lệ');
+    }
+
+    const txnRef = result.vnp_TxnRef;
+    const isService = txnRef.startsWith('svc_');
+    const bookingId = Number(isService ? txnRef.replace('svc_', '') : txnRef);
+
+    return this.bookingService.bookingById(bookingId);
+  }
 }

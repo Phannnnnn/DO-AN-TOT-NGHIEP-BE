@@ -14,62 +14,48 @@ import { RoomTypeAmenityService } from '../room_type_amenity/room_type_amenity.s
 import { RoomTypeBedService } from '../room_type_bed/room_type_bed.service';
 import { PricePlanService } from '../price_plan/price_plan.service';
 import { RoomImageService } from '../room_image/room_image.service';
-
 @Injectable()
 export class RoomTypeService {
   constructor(
     @InjectRepository(RoomType)
     private readonly roomTypeRepository: Repository<RoomType>,
-
     @Inject(forwardRef(() => RoomTypeAmenityService))
     private roomTypeAmenityService: RoomTypeAmenityService,
-
     @Inject(forwardRef(() => RoomTypeBedService))
     private readonly roomTypeBedService: RoomTypeBedService,
-
     @Inject(forwardRef(() => PricePlanService))
     private readonly pricePlanService: PricePlanService,
-
     @Inject(forwardRef(() => RoomImageService))
     private readonly roomImageService: RoomImageService,
   ) {}
-
   async create(createRoomTypeDto: CreateRoomTypeDto) {
     const roomTypeExists = await this.roomTypeRepository.exists({
       where: { typeName: createRoomTypeDto.typeName },
     });
-
     if (roomTypeExists) {
       throw new ConflictException('Loại phòng này đã tồn tại trong hệ thống.');
     }
-
     const roomTypeCreateData = {
       typeName: createRoomTypeDto.typeName,
       description: createRoomTypeDto.description,
       maxOccupancy: createRoomTypeDto.maxOccupancy,
     };
-
     const roomType = this.roomTypeRepository.create(roomTypeCreateData);
     await this.roomTypeRepository.save(roomType);
-
     const roomTypeId = roomType.roomTypeId;
-
     const { amenityIds, roomBeds, images, pricePlans } = createRoomTypeDto;
-
     if (amenityIds?.length) {
       await this.roomTypeAmenityService.create({
         roomTypeId: roomTypeId,
         amenityIds: amenityIds ?? [],
       });
     }
-
     if (roomBeds?.length) {
       await this.roomTypeBedService.create({
         roomTypeId: roomTypeId,
         roomBeds: roomBeds ?? [],
       });
     }
-
     if (pricePlans?.length) {
       await Promise.all(
         pricePlans.map(async (pricePlan) => {
@@ -84,11 +70,9 @@ export class RoomTypeService {
         }),
       );
     }
-
     if (images?.length) {
       await this.roomImageService.saveImages(roomTypeId, images);
     }
-
     return this.formatRoomType(await this.roomTypeByIdEntity(roomTypeId));
   }
 
@@ -102,7 +86,6 @@ export class RoomTypeService {
       },
       order: { roomImages: { sortOrder: 'ASC' } },
     });
-
     return roomTypes.map((roomType) => this.formatRoomType(roomType));
   }
 
@@ -130,7 +113,6 @@ export class RoomTypeService {
 
   async update(roomTypeId: number, updateRoomTypeDto: UpdateRoomTypeDto) {
     const roomType = await this.roomTypeByIdEntity(roomTypeId);
-
     if (
       updateRoomTypeDto.typeName &&
       updateRoomTypeDto.typeName !== roomType.typeName
@@ -144,7 +126,6 @@ export class RoomTypeService {
         );
       }
     }
-
     const {
       typeName,
       description,
@@ -154,8 +135,6 @@ export class RoomTypeService {
       pricePlans,
       images,
     } = updateRoomTypeDto;
-
-    // 1. Update fields cơ bản
     Object.assign(roomType, {
       typeName,
       description: description ?? '',
@@ -164,40 +143,25 @@ export class RoomTypeService {
     if (!description) {
       roomType.description = '';
     }
-
     await this.roomTypeRepository.save(roomType);
-
-    // 2. Update tiện ích
     if (amenityIds !== undefined) {
       await this.roomTypeAmenityService.update(roomTypeId, { amenityIds });
     }
-
-    // 3. Update giường
     if (roomBeds !== undefined) {
       await this.roomTypeBedService.update(roomTypeId, { roomBeds });
     }
-
-    // 4. Update pricePlans
     if (pricePlans !== undefined) {
-      //Tat ca plans dang co
       const pricePlansExists = roomType.pricePlans;
-      //Lay ra planIds
       const planIds = pricePlansExists.map((plan) => plan.pricePlanId);
-      //Lay ra planIds update
       const updatePlanIds = pricePlans
         .filter((pricePlan) => pricePlan.pricePlanId)
         .map((price) => price.pricePlanId);
-
-      //Tim cac planId khong co trong planIds
       const deletePlanIds = planIds.filter((id) => !updatePlanIds.includes(id));
-
-      //Xoa cac plan khong co trong updatePlanIds
       if (deletePlanIds.length) {
         await Promise.all(
           deletePlanIds.map((id) => this.pricePlanService.remove(id)),
         );
       }
-
       await Promise.all(
         pricePlans.map(async (pricePlan) => {
           if (pricePlan.pricePlanId) {
@@ -220,11 +184,9 @@ export class RoomTypeService {
         }),
       );
     }
-
     if (images !== undefined) {
       await this.roomImageService.replaceImages(roomTypeId, images);
     }
-
     return this.formatRoomType(await this.roomTypeByIdEntity(roomTypeId));
   }
 
@@ -233,17 +195,14 @@ export class RoomTypeService {
       where: { roomTypeId },
       relations: { rooms: true },
     });
-
     if (!roomType) {
       throw new NotFoundException('Loại phòng không tồn tại trên hệ thống.');
     }
-
     if (roomType.rooms && roomType.rooms.length > 0) {
       throw new ConflictException(
         `Không thể xóa loại phòng đang có ${roomType.rooms.length} phòng liên kết với loại phòng này.`,
       );
     }
-
     await this.roomTypeRepository.delete({ roomTypeId });
     return roomType;
   }

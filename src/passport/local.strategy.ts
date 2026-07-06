@@ -21,7 +21,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       );
     }
 
-    if (!user?.isAcctive) {
+    if (!user?.isActive) {
       throw new UnauthorizedException('Tài khoản đang bị khóa.');
     }
 

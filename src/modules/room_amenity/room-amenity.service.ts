@@ -71,8 +71,6 @@ export class RoomAmenityService {
       throw new NotFoundException('Tiện ích không tồn tại trong hệ thống.');
     }
 
-    
-
     await this.roomAmenityRepository.delete(roomAmenityId);
     return amenity;
   }

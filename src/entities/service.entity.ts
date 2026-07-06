@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -31,16 +32,21 @@ export class Service {
   @Column()
   serviceTypeId: number;
 
-  @ManyToOne(() => ServiceType, (type) => type.services)
+  @Column({ default: true })
+  isActive: boolean;
+
+  @ManyToOne(() => ServiceType, (type) => type.services, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'serviceTypeId' })
   serviceType: ServiceType;
-
-  @OneToMany(() => BookingServiceEntity, (bs) => bs.service)
-  bookingServices: BookingServiceEntity[];
 
   @CreateDateColumn()
   created_At: Date;
 
   @UpdateDateColumn()
   updated_At: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

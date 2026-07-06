@@ -23,7 +23,6 @@ import { PricePlanModule } from './modules/price_plan/price_plan.module';
 import { RoomTypeAmenityModule } from './modules/room_type_amenity/room_type_amenity.module';
 import { RoomBedModule } from './modules/romm_bed/room_bed.module';
 import { RoomTypeBedModule } from './modules/room_type_bed/room_type_bed.module';
-import { RoomTypeBed } from './entities/room-type-bed.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailModule } from './modules/mail/mail.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -31,7 +30,7 @@ import { ReportModule } from './modules/report/report.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { RoomHoldModule } from './modules/room_hold/room_hold.module';
-
+import { HousekeepingTaskModule } from './modules/housekeeping_task/housekeeping_task.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -46,7 +45,6 @@ import { RoomHoldModule } from './modules/room_hold/room_hold.module';
       entities: [User, Room, RoomType, Customer, ServiceType, Service],
       synchronize: true,
       autoLoadEntities: true,
-      // logging: true,
     }),
     RoomModule,
     UserModule,
@@ -64,13 +62,13 @@ import { RoomHoldModule } from './modules/room_hold/room_hold.module';
     PricePlanModule,
     RoomTypeAmenityModule,
     RoomTypeBedModule,
-    RoomTypeBed,
     MailModule,
     PaymentModule,
     DashboardModule,
     ReportModule,
     CloudinaryModule,
     RoomHoldModule,
+    HousekeepingTaskModule,
   ],
   controllers: [],
   providers: [],

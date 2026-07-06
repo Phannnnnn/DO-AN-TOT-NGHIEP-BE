@@ -14,6 +14,7 @@ import { BookingGuest } from '../../entities/booking-guest.entity';
 import { MailModule } from '../mail/mail.module';
 import { RoomHoldModule } from '../room_hold/room_hold.module';
 import { BookingScheduler } from './booking.scheduler';
+import { HousekeepingTaskModule } from '../housekeeping_task/housekeeping_task.module';
 
 @Module({
   controllers: [BookingController],
@@ -32,6 +33,7 @@ import { BookingScheduler } from './booking.scheduler';
     RoomModule,
     MailModule,
     RoomHoldModule,
+    HousekeepingTaskModule,
   ],
   exports: [BookingService],
 })

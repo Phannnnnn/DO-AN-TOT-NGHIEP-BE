@@ -24,8 +24,8 @@ export class AuthController {
   ) {}
 
   @Post('/register')
-  register(@Body() userData: CreateUserDto) {
-    return this.userService.create(userData);
+  register(@Body() createUserDto: CreateUserDto) {
+    return this.userService.create(createUserDto);
   }
 
   @UseGuards(LocalAuthGuard)

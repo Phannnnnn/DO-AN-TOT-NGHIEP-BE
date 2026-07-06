@@ -10,7 +10,12 @@ export class AuthService {
   ) {}
 
   login(user: any) {
-    const payload = { id: user.id, fullName: user.fullName, role: user.role };
+    const payload = {
+      id: user.id,
+      fullName: user.customer?.fullName || user.userName,
+      role: user.role,
+      avatar: user.customer?.avatar || null,
+    };
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {

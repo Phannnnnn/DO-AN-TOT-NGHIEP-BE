@@ -4,18 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Booking } from '../../entities/booking.entity';
-
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-
   constructor(
     private readonly mailerService: MailerService,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
   ) {}
-
-  //Test
   async sendTestMail(email: string) {
     await this.mailerService.sendMail({
       to: email,
@@ -24,9 +20,8 @@ export class MailService {
     });
   }
   async sendBookingConfirmation(booking: Booking) {
-    const email = booking.guestEmail ?? booking.customer?.email;
+    const email = booking.guestEmail;
     if (!email) return;
-
     await this.mailerService.sendMail({
       to: email,
       subject: `Xác nhận đặt phòng #${booking.bookingId}`,
@@ -43,11 +38,9 @@ export class MailService {
       },
     });
   }
-
   async sendPaymentConfirmation(booking: Booking) {
-    const email = booking.guestEmail ?? booking.customer?.email;
+    const email = booking.guestEmail;
     if (!email) return;
-
     await this.mailerService.sendMail({
       to: email,
       subject: `Xác nhận thanh toán booking #${booking.bookingId}`,
@@ -62,11 +55,9 @@ export class MailService {
       },
     });
   }
-
   async sendCheckInReminder(booking: Booking) {
-    const email = booking.guestEmail ?? booking.customer?.email;
+    const email = booking.guestEmail;
     if (!email) return;
-
     await this.mailerService.sendMail({
       to: email,
       subject: `Nhắc nhở check-in ngày mai - Booking #${booking.bookingId}`,
@@ -81,18 +72,15 @@ export class MailService {
       },
     });
   }
-
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async handleCheckInReminders() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dateStr = tomorrow.toISOString().slice(0, 10);
-
     const bookings = await this.bookingRepository.find({
       where: { checkInDate: dateStr },
       relations: { customer: true, bookingDetails: { room: true } },
     });
-
     for (const booking of bookings) {
       try {
         await this.sendCheckInReminder(booking);

@@ -1,33 +1,23 @@
 import {
   IsNotEmpty,
   IsString,
-  IsEmail,
   IsOptional,
   IsDateString,
-  Length,
   MaxLength,
 } from 'class-validator';
 
 export class CreateCustomerDto {
   @IsString()
   @MaxLength(100)
-  @IsNotEmpty({ message: 'Họ tên không được để trống' })
+  @IsNotEmpty()
   fullName: string;
 
-  @IsString()
-  @Length(9, 20, { message: 'Số định danh phải từ 9 đến 20 ký tự' })
-  @IsNotEmpty({ message: 'Số định danh (CCCD/CMND) là bắt buộc' })
-  idNumber: string;
-
-  @IsString()
-  @MaxLength(20)
-  @IsNotEmpty({ message: 'SĐT không được bỏ trống.' })
-  phone: string;
+  @IsNotEmpty()
+  email: string;
 
   @IsOptional()
-  @MaxLength(100)
-  @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
-  email?: string;
+  @IsString()
+  phone?: string;
 
   @IsOptional()
   @IsString()
@@ -39,9 +29,10 @@ export class CreateCustomerDto {
   nationality?: string;
 
   @IsOptional()
-  @IsDateString(
-    {},
-    { message: 'Ngày sinh phải theo định dạng ISO 8601 (YYYY-MM-DD)' },
-  )
+  @IsDateString()
   dateOfBirth?: string;
+
+  @IsOptional()
+  @IsString()
+  avatar?: string;
 }

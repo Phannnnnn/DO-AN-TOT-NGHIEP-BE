@@ -1,7 +1,6 @@
 import { Type } from 'class-transformer';
 import {
   IsInt,
-  IsPositive,
   IsOptional,
   IsString,
   IsArray,
@@ -11,7 +10,6 @@ import {
   IsNotEmpty,
   IsEmail,
   IsDateString,
-  Matches,
 } from 'class-validator';
 import { CreateBookingDetailDto } from '../../booking_detail/dto/create-booking-detail.dto';
 

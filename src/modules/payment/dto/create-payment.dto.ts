@@ -1,4 +1,3 @@
-// src/vnpay/dto/create-payment.dto.ts
 import {
   IsNotEmpty,
   IsNumber,
@@ -6,29 +5,23 @@ import {
   IsOptional,
   Min,
 } from 'class-validator';
-
 export class CreatePaymentDto {
   @IsNumber()
   @Min(1)
-  amount: number; // Số tiền (VND)
-
+  amount: number;
   @IsString()
   @IsNotEmpty()
-  orderId: string; // Mã đơn hàng (booking ID hoặc mã tham chiếu)
-
+  orderId: string;
   @IsString()
   @IsNotEmpty()
-  orderInfo: string; // Thông tin đơn hàng (mô tả)
-
+  orderInfo: string;
   @IsString()
   @IsOptional()
-  bankCode?: string; // Mã ngân hàng (tùy chọn)
-
+  bankCode?: string;
   @IsString()
   @IsOptional()
-  language?: string; // 'vn' hoặc 'en'
-
+  language?: string;
   @IsString()
   @IsOptional()
-  ipAddress?: string; // IP khách hàng
+  ipAddress?: string;
 }

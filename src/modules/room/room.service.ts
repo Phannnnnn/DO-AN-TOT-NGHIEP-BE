@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,19 +11,28 @@ import { Room } from '../../entities/room.entity';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomTypeService } from '../room_type/room_type.service';
 import { UpdateStatusRoomDto } from './dto/update-status-room.dto';
-
+import { RoomStatus } from '../../common/enums/room-status.enum';
+import { HousekeepingService } from '../housekeeping_task/housekeeping_task.service';
+import {
+  HousekeepingTask,
+  HousekeepingTaskStatus,
+} from '../../entities/housekeeping-task.entity';
+import { BookingDetail } from '../../entities/booking-detail.entity';
+import { BookingStatus } from '../../common/enums/booking-status.enum';
 @Injectable()
 export class RoomService {
   constructor(
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
     private readonly roomTypeService: RoomTypeService,
+    private readonly housekeepingService: HousekeepingService,
+    @InjectRepository(HousekeepingTask)
+    private readonly housekeepingTaskRepository: Repository<HousekeepingTask>,
+    @InjectRepository(BookingDetail)
+    private readonly bookingDetailRepository: Repository<BookingDetail>,
   ) {}
-
   private formatRoom(room: Room) {
     const activePlan = room.roomType.pricePlans.find((p) => p.isActive) ?? null;
-
-    // return room;
     return {
       roomId: room.roomId,
       roomNumber: room.roomNumber,
@@ -64,7 +74,6 @@ export class RoomService {
       })),
     };
   }
-
   private async roomByIdEntity(roomId: number): Promise<Room> {
     const room = await this.roomRepository.findOne({
       where: { roomId },
@@ -80,17 +89,13 @@ export class RoomService {
         roomType: { roomImages: { sortOrder: 'ASC' } },
       },
     });
-
     if (!room) {
       throw new NotFoundException('Phòng không tồn tại trên hệ thống.');
     }
-
     return room;
   }
-
   async create(createRoomDto: CreateRoomDto) {
     await this.roomTypeService.roomTypeByIdEntity(createRoomDto.roomTypeId);
-
     const roomExists = await this.roomRepository.findOne({
       where: { roomNumber: createRoomDto.roomNumber },
     });
@@ -99,12 +104,13 @@ export class RoomService {
         `Phòng số ${createRoomDto.roomNumber} đã tồn tại trên hệ thống.`,
       );
     }
-
     const room = this.roomRepository.create(createRoomDto);
     await this.roomRepository.save(room);
+    if (room.status === RoomStatus.CLEANING) {
+      await this.housekeepingService.createTask(room.roomId);
+    }
     return this.formatRoom(await this.roomByIdEntity(room.roomId));
   }
-
   async rooms() {
     const rooms = await this.roomRepository.find({
       relations: {
@@ -122,15 +128,28 @@ export class RoomService {
     });
     return rooms.map((room) => this.formatRoom(room));
   }
-
   async roomById(roomId: number) {
     return this.formatRoom(await this.roomByIdEntity(roomId));
   }
-
   async update(roomId: number, updateRoomDto: UpdateRoomDto) {
     const room = await this.roomRepository.findOneBy({ roomId });
     if (!room) {
       throw new NotFoundException('Phòng này không tồn tại trên hệ thống.');
+    }
+
+    const occupied = await this.bookingDetailRepository
+      .createQueryBuilder('booking_detail')
+      .innerJoin('booking_detail.booking', 'bookings')
+      .where('booking_detail.roomId = :roomId', { roomId })
+      .andWhere('bookings.status = :status', {
+        status: BookingStatus.CONFIRMED,
+      })
+      .andWhere('bookings.actualCheckIn IS NOT NULL')
+      .andWhere('bookings.actualCheckOut IS NULL')
+      .getOne();
+
+    if (occupied) {
+      throw new BadRequestException('Không thể cập nhật phòng đang sử dụng.');
     }
 
     if (
@@ -146,36 +165,69 @@ export class RoomService {
         );
       }
     }
-
     if (
       updateRoomDto.roomTypeId &&
       updateRoomDto.roomTypeId !== room.roomTypeId
     ) {
       await this.roomTypeService.roomTypeByIdEntity(updateRoomDto.roomTypeId);
     }
-
+    if (
+      (updateRoomDto.status && room.status === RoomStatus.CLEANING) ||
+      room.status === RoomStatus.PROGRESS
+    ) {
+      await this.housekeepingService.getActiveTask(roomId);
+    }
     Object.assign(room, updateRoomDto);
     await this.roomRepository.save(room);
+    if (updateRoomDto.status === RoomStatus.CLEANING) {
+      await this.housekeepingService.createTask(roomId);
+    }
     return this.roomById(roomId);
   }
 
   async updateStatus(roomId: number, updateStatusRoom: UpdateStatusRoomDto) {
-    const room = await this.roomById(roomId);
-    if (updateStatusRoom.status) {
-      if (!room) {
-        throw new NotFoundException('Phòng không tồn tại trên hệ thống.');
-      }
-      room.status = updateStatusRoom.status;
+    const room = await this.roomRepository.findOneBy({ roomId });
+    if (!room) {
+      throw new NotFoundException('Phòng không tồn tại trên hệ thống.');
     }
-
-    return room;
+    console.log(room.status);
+    if (
+      room.status === RoomStatus.CLEANING ||
+      room.status === RoomStatus.PROGRESS
+    ) {
+      await this.housekeepingService.getActiveTask(roomId);
+    }
+    room.status = updateStatusRoom.status;
+    await this.roomRepository.save(room);
+    if (updateStatusRoom.status === RoomStatus.CLEANING) {
+      await this.housekeepingService.createTask(roomId);
+    }
+    return this.roomById(roomId);
   }
-
   async remove(roomId: number) {
     const room = await this.roomRepository.findOneBy({ roomId });
     if (!room) {
       throw new NotFoundException('Phòng này không tồn tại trên hệ thống.');
     }
+
+    const bookingDetailExits = await this.bookingDetailRepository.exists({
+      where: { roomId },
+    });
+
+    if (bookingDetailExits) {
+      throw new BadRequestException('Không thể xóa phòng đã được sử dụng.');
+    }
+
+    const housekeepingTaskExits = await this.housekeepingTaskRepository.findOne(
+      {
+        where: { roomId, status: HousekeepingTaskStatus.IN_PROGRESS },
+      },
+    );
+
+    if (housekeepingTaskExits) {
+      throw new BadRequestException('Không thể xóa phòng đã được sử dụng.');
+    }
+
     const data = await this.roomById(roomId);
     await this.roomRepository.remove(room);
     return data;

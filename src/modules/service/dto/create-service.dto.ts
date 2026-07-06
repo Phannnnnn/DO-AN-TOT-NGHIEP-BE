@@ -22,6 +22,10 @@ export class CreateServiceDto {
   @MaxLength(50)
   unit?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
   @IsString()
   @IsOptional()
   description?: string;

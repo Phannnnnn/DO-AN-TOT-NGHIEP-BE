@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -9,23 +10,38 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { RoomHold } from '../../entities/room-hold.entity';
 import { CreateRoomHoldDto } from './dto/create-room-hold.dto';
 import { randomUUID } from 'crypto';
-
-const HOLD_MINUTES = 15;
-
+import { Room } from '../../entities/room.entity';
+import { RoomStatus } from '../../common/enums/room-status.enum';
+const HOLD_MINUTES = Number(process.env.HOLD_MINUTES) || 15;
 @Injectable()
 export class RoomHoldService {
   constructor(
     @InjectRepository(RoomHold)
     private readonly roomHoldRepository: Repository<RoomHold>,
+    @InjectRepository(Room)
+    private readonly roomRepository: Repository<Room>,
   ) {}
 
-  async hold(
-    dto: CreateRoomHoldDto,
-  ): Promise<{ sessionId: string; expiresAt: Date }> {
+  async hold(dto: CreateRoomHoldDto): Promise<{
+    sessionId: string;
+    expiresAt: Date;
+  }> {
     const now = new Date();
-
-    // Kiểm tra từng roomId có bị hold trùng khoảng thời gian không
     for (const roomId of dto.roomIds) {
+      const room = await this.roomRepository.findOne({
+        where: { roomId: roomId },
+      });
+
+      if (!room) {
+        throw new NotFoundException(
+          'Phòng đang giữ không tồn tại trên hệ thống.',
+        );
+      }
+
+      if (room.status === RoomStatus.MAINTENANCE) {
+        throw new BadRequestException('Phòng đang giữ đang không sẵn sàng.');
+      }
+
       const conflict = await this.roomHoldRepository
         .createQueryBuilder('h')
         .where('h.roomId = :roomId', { roomId })
@@ -33,17 +49,14 @@ export class RoomHoldService {
         .andWhere('h.checkInDate < :checkOut', { checkOut: dto.checkOutDate })
         .andWhere('h.checkOutDate > :checkIn', { checkIn: dto.checkInDate })
         .getOne();
-
       if (conflict) {
         throw new ConflictException(
           `Phòng ${roomId} đang được giữ bởi người dùng khác trong khoảng thời gian này. Vui lòng thử lại sau.`,
         );
       }
     }
-
     const sessionId = randomUUID();
     const expiresAt = new Date(now.getTime() + HOLD_MINUTES * 60 * 1000);
-
     const holds = dto.roomIds.map((roomId) =>
       this.roomHoldRepository.create({
         roomId,
@@ -54,7 +67,6 @@ export class RoomHoldService {
       }),
     );
     await this.roomHoldRepository.save(holds);
-
     return { sessionId, expiresAt };
   }
 
@@ -82,13 +94,11 @@ export class RoomHoldService {
         .andWhere('h.checkOutDate = :checkOutDate', { checkOutDate })
         .andWhere('h.expiresAt > :now', { now })
         .getOne();
-
       if (!hold) return false;
     }
     return true;
   }
 
-  // Trả về roomIds đang bị hold cho khoảng thời gian cụ thể
   async getHeldRoomIds(
     checkInDate: string,
     checkOutDate: string,
@@ -100,11 +110,9 @@ export class RoomHoldService {
       .andWhere('h.checkInDate < :checkOut', { checkOut: checkOutDate })
       .andWhere('h.checkOutDate > :checkIn', { checkIn: checkInDate })
       .getMany();
-
     return [...new Set(holds.map((h) => h.roomId))];
   }
 
-  // Cleanup mỗi phút
   @Cron(CronExpression.EVERY_MINUTE)
   async cleanupExpired(): Promise<void> {
     await this.roomHoldRepository.delete({
